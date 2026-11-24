@@ -1,7 +1,7 @@
 // Hi3D Print Studio front end: live job state over Server-Sent Events, no framework.
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
-const state = { jobs: {}, sel: null, tab: "live", model: null, autoTab: true, file: null };
+const state = { jobs: {}, sel: null, tab: "live", model: null, autoTab: true, files: [] };
 
 const STAGE_ICONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const ACTIVE = new Set(["submitting", "queued", "running", "paused"]);
@@ -37,18 +37,31 @@ function toast(msg) {
 // ---------------------------------------------------------------- new print form
 function initForm() {
   const drop = $("#drop"), file = $("#file");
-  const setFile = (f) => {
-    if (!f || !f.type.startsWith("image/")) return;
-    state.file = f;
-    $("#dropImg").src = URL.createObjectURL(f);
+  // One picture, or several for a batch (one print each, same settings, queued back to back).
+  const setFiles = (list) => {
+    const files = [...(list || [])].filter((f) => f.type.startsWith("image/"));
+    if (!files.length) return;
+    state.files = files;
+    $("#dropImg").src = URL.createObjectURL(files[0]);
     drop.classList.add("has");
-    if (!$("#name").value) $("#name").placeholder = f.name.replace(/\.[^.]+$/, "");
+    const batch = files.length > 1;
+    $("#dropCount").hidden = !batch;
+    $("#dropCount").textContent = `${files.length} pictures`;
+    $("#name").disabled = batch;
+    $("#name").placeholder = batch ? "From each file name" : files[0].name.replace(/\.[^.]+$/, "");
+    if (batch) $("#name").value = "";
     $("#go").disabled = false;
+    $("#go").textContent = batch ? `Make ${files.length} prints` : "Make it";
+    updateBatchNote();
   };
-  file.addEventListener("change", () => setFile(file.files[0]));
+  const updateBatchNote = () => {
+    $("#batchNote").hidden = !(state.files.length > 1 && ($("#gateShape").checked || $("#gateDetail").checked));
+  };
+  ["#gateShape", "#gateDetail"].forEach((s) => $(s).addEventListener("change", updateBatchNote));
+  file.addEventListener("change", () => setFiles(file.files));
   ["dragenter", "dragover"].forEach((e) => drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add("over"); }));
   ["dragleave", "drop"].forEach((e) => drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.remove("over"); }));
-  drop.addEventListener("drop", (ev) => setFile(ev.dataTransfer.files[0]));
+  drop.addEventListener("drop", (ev) => setFiles(ev.dataTransfer.files));
   $("#height").addEventListener("input", (e) => ($("#heightVal").textContent = `${e.target.value} mm`));
   $$(".seg").forEach((seg) => seg.addEventListener("click", (e) => {
     if (e.target.tagName !== "BUTTON") return;
@@ -56,31 +69,42 @@ function initForm() {
   }));
   $("#newForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!state.file) return;
-    const fd = new FormData();
-    fd.append("image", state.file, state.file.name);
-    fd.append("name", $("#name").value || $("#name").placeholder);
-    fd.append("height_mm", $("#height").value);
-    fd.append("colours", $("#colours .on").textContent);
-    fd.append("colour_quality", $("#quality .on").dataset.v);
-    fd.append("shape_model", $("#shape .on").dataset.v);
-    fd.append("seed", $("#seed").value.trim());
-    fd.append("gate_shape", $("#gateShape").checked ? "1" : "0");
-    fd.append("gate_detail", $("#gateDetail").checked ? "1" : "0");
+    const files = state.files;
+    if (!files.length) return;
+    const batch = files.length > 1 ? `batch-${Date.now().toString(36)}` : "";
     $("#go").disabled = true;
-    $("#go").textContent = "Sending…";
+    let made = 0, first = null;
     try {
-      const r = await fetch("/api/jobs", { method: "POST", body: fd });
-      if (!r.ok) throw new Error(await r.text());
-      const job = await r.json();
-      state.jobs[job.id] = job;
-      select(job.id);
-      toast("Started. You can leave this page open or come back later.");
+      for (const f of files) {
+        $("#go").textContent = files.length > 1 ? `Sending ${made + 1} of ${files.length}…` : "Sending…";
+        const fd = new FormData();
+        fd.append("image", f, f.name);
+        fd.append("name", files.length > 1 ? f.name.replace(/\.[^.]+$/, "") : ($("#name").value || $("#name").placeholder));
+        fd.append("height_mm", $("#height").value);
+        fd.append("colours", $("#colours .on").textContent);
+        fd.append("colour_quality", $("#quality .on").dataset.v);
+        fd.append("shape_model", $("#shape .on").dataset.v);
+        fd.append("seed", $("#seed").value.trim());
+        fd.append("gate_shape", $("#gateShape").checked ? "1" : "0");
+        fd.append("gate_detail", $("#gateDetail").checked ? "1" : "0");
+        fd.append("ink_cleanup", $("#inkClean").checked ? "1" : "0");
+        fd.append("batch", batch);
+        const r = await fetch("/api/jobs", { method: "POST", body: fd });
+        if (!r.ok) throw new Error(`${f.name}: ${await r.text()}`);
+        const job = await r.json();
+        state.jobs[job.id] = job;
+        first = first || job.id;
+        made++;
+      }
+      select(first);
+      toast(made > 1 ? `Queued ${made} prints. They run one after another; leave the studio running.`
+                     : "Started. You can leave this page open or come back later.");
     } catch (err) {
-      toast("Could not start: " + err.message);
+      toast((made ? `Queued ${made}, then stopped. ` : "Could not start: ") + err.message);
+      if (first) select(first);
     } finally {
-      $("#go").textContent = "Make it";
-      $("#go").disabled = !state.file;
+      $("#go").textContent = files.length > 1 ? `Make ${files.length} prints` : "Make it";
+      $("#go").disabled = !state.files.length;
     }
   });
 }
@@ -141,7 +165,8 @@ function render() {
   chip.textContent = statusText[job.status] || job.status;
   const p = job.params || {};
   $("#jobMeta").textContent = [`${p.height_mm} mm`, `${p.colours} colours`, p.colour_quality === "best" ? "best colour" : "fast colour",
-    p.shape_model === "pixal3d" ? "Pixal3D" : "TRELLIS.2", `seed ${p.seed}`, fmtDate(job.created)].join(" · ");
+    p.shape_model === "pixal3d" ? "Pixal3D" : "TRELLIS.2", `seed ${p.seed}`, fmtDate(job.created),
+    ...(p.ink_cleanup ? ["outlines cleaned"] : []), ...(p.batch ? ["batch"] : [])].join(" · ");
   const pct = Math.round((job.progress || 0) * 100);
   const bar = $("#jobBar");
   bar.style.width = `${pct}%`;
@@ -163,7 +188,20 @@ function render() {
   renderResult(job);
   const err = $("#errorBox");
   err.hidden = !job.error || job.status === "done";
-  err.textContent = job.error ? `Stopped: ${job.error}` : "";
+  const why = job.summary && job.summary.message ? ` Bambu Studio said: ${job.summary.message.trim()}` : "";
+  err.innerHTML = !job.error ? "" : job.can_retry_print
+    ? `<div>The model and its colours are made, but the print file failed Bambu's slice check.${escapeHtml(why)}</div>
+       <button id="retryPrint" class="primary" ${job.recolouring ? "disabled" : ""}>${job.recolouring ? "Making the print file…" : "Retry the print file"}</button>`
+    : escapeHtml(`Stopped: ${job.error}`);
+  const rp = $("#retryPrint");
+  if (rp) rp.addEventListener("click", async () => {
+    rp.disabled = true; rp.textContent = "Making the print file…";
+    try {
+      const r = await fetch(`/api/jobs/${job.id}/recolour`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ palette: job.summary.palette }) });
+      if (!r.ok) throw new Error(await r.text());
+    } catch (e) { toast(e.message); rp.disabled = false; rp.textContent = "Retry the print file"; }
+  });
 }
 
 // The shape model's name, for jobs made before the studio labelled Pixal3D runs correctly.
@@ -306,16 +344,44 @@ function renderResult(job) {
     stats.push([sm.colour_changes, "Colour changes"]);
     stats.push([`${Math.round(sm.filament_g)} g`, `Filament · ${Math.round(sm.model_g)} g in the model`]);
   } else {
-    stats.push(["—", "Slice check did not run"]);
+    stats.push(["—", sm && sm.slice_failed ? "Not sliced yet: check it in Bambu Studio" : "Slice check did not run"]);
   }
   if (sm && sm.size_mm) stats.push([`${sm.size_mm.map((x) => Math.round(x)).join(" × ")}`, "Size in mm"]);
   $("#stats").innerHTML = stats.map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
   const pal = (sm && sm.palette) || [];
   $("#palette").innerHTML = pal.map((hex, i) => `
     <div class="sw"><i style="background:${hex}"></i><div>Filament ${i + 1}<br><b>${hex}</b>${sm.per_filament_g ? ` · ${Math.round(sm.per_filament_g[i] || 0)} g` : ""}</div></div>`).join("");
+  renderRecolour(job);
   const w = sm && sm.warning;
   $("#warn").hidden = !w;
-  $("#warn").textContent = w ? `Bambu Studio says: ${w}` + (/floating|support/i.test(w) ? " Turn on supports (tree supports suit figures) before printing." : "") : "";
+  $("#warn").textContent = !w ? "" : sm.slice_failed ? w
+    : `Bambu Studio says: ${w}` + (/floating|support/i.test(w) ? " Turn on supports (tree supports suit figures) before printing." : "");
+}
+
+// ---------------------------------------------------------------- choose filament colours
+function renderRecolour(job) {
+  const busy = !!job.recolouring;
+  $("#recolourBtn").hidden = busy || (state.recolour && state.recolour.id === job.id);
+  $("#recolourState").textContent = busy ? "Remaking the print file with your colours…"
+    : job.recolour_error ? job.recolour_error
+    : job.recolours ? `Colours chosen by you (remake ${job.recolours}).` : "";
+  const editing = state.recolour && state.recolour.id === job.id && !busy;
+  $("#recolourEdit").hidden = !editing;
+  if (!editing) return;
+  const cols = state.recolour.colours;
+  $("#recolourSwatches").innerHTML = cols.map((hex, i) => `
+    <div class="rcs"><input type="color" value="${hex}" data-i="${i}"><code>${hex.toUpperCase()}</code>
+    ${cols.length > 1 ? `<button data-drop="${i}" title="Drop this colour">✕</button>` : ""}</div>`).join("")
+    + (cols.length < 4 ? `<button class="rcsAdd" id="rcsAdd">+ Add colour</button>` : "");
+  $$('#recolourSwatches input[type=color]').forEach((el) => el.addEventListener("input", () => {
+    cols[+el.dataset.i] = el.value;
+    el.nextElementSibling.textContent = el.value.toUpperCase();
+  }));
+  $$("#recolourSwatches [data-drop]").forEach((b) => b.addEventListener("click", () => {
+    cols.splice(+b.dataset.drop, 1); renderRecolour(job);
+  }));
+  const add = $("#rcsAdd");
+  if (add) add.addEventListener("click", () => { cols.push("#808080"); renderRecolour(job); });
 }
 
 // ---------------------------------------------------------------- actions
@@ -367,6 +433,23 @@ ${what}`)) return;
       pollStatus();
     } catch (e) { toast(e.message); }
     finally { btn.disabled = false; btn.classList.remove("busy"); $("span", btn).textContent = "Stop everything"; }
+  });
+  $("#recolourBtn").addEventListener("click", () => {
+    const job = state.jobs[state.sel];
+    state.recolour = { id: job.id, colours: [...((job.summary && job.summary.palette) || [])] };
+    renderRecolour(job);
+  });
+  $("#recolourCancel").addEventListener("click", () => { state.recolour = null; renderRecolour(state.jobs[state.sel]); });
+  $("#recolourGo").addEventListener("click", async () => {
+    const job = state.jobs[state.sel];
+    try {
+      await fetch(`/api/jobs/${job.id}/recolour`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ palette: state.recolour.colours }) }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); });
+      state.recolour = null;
+      job.recolouring = true;
+      renderRecolour(job);
+      toast("Remaking the print file with your colours (about a minute)…");
+    } catch (e) { toast(e.message); }
   });
   $("#folderBtn").addEventListener("click", async () => {
     try { await post(`/api/jobs/${state.sel}/open-folder`); } catch (e) { toast(e.message); }

@@ -11,7 +11,7 @@ import torch
 
 import folder_paths
 
-from . import colour_print, threemf
+from . import colour_print, ink, threemf
 
 
 def _mesh_arrays(mesh):
@@ -124,6 +124,42 @@ class Hi3DPaintMesh:
                      torch.tensor(small.faces, dtype=torch.int64).unsqueeze(0)),)
 
 
-NODE_CLASS_MAPPINGS = {"Hi3DColourPrint3MF": Hi3DColourPrint3MF, "Hi3DPaintMesh": Hi3DPaintMesh}
+class Hi3DInkCleanup:
+    """Experimental: replace a cartoon's thin black outlines with the colour beside them.
+
+    Feed the result to the painter (and the print step's picture) so the ink does not
+    come back as dark smudges on the sides and back of the model. See ink.py.
+    """
+    CATEGORY = "Hi3D/print"
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "clean"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "image": ("IMAGE",),
+            "mask": ("MASK", {"tooltip": "The figure (from background removal)."}),
+            "line_width": ("FLOAT", {"default": 0.008, "min": 0.002, "max": 0.03, "step": 0.001,
+                                     "tooltip": "Thickest line that counts as ink, as a share of the figure's height."}),
+        }}
+
+    def clean(self, image, mask, line_width):
+        import torch.nn.functional as F
+
+        out = []
+        for i in range(image.shape[0]):
+            rgb = image[i, ..., :3].detach().cpu().float().numpy()
+            m = mask[min(i, mask.shape[0] - 1)] if mask.ndim == 3 else mask
+            if tuple(m.shape) != rgb.shape[:2]:
+                m = F.interpolate(m[None, None].float(), size=rgb.shape[:2], mode="bilinear")[0, 0]
+            cleaned, rep = ink.clean_outlines(rgb, m.detach().cpu().numpy(), line_frac=line_width)
+            print(f"[Hi3D Ink Cleanup] {rep}", flush=True)
+            out.append(torch.from_numpy(cleaned))
+        return (torch.stack(out),)
+
+
+NODE_CLASS_MAPPINGS = {"Hi3DColourPrint3MF": Hi3DColourPrint3MF, "Hi3DPaintMesh": Hi3DPaintMesh,
+                       "Hi3DInkCleanup": Hi3DInkCleanup}
 NODE_DISPLAY_NAME_MAPPINGS = {"Hi3DColourPrint3MF": "Colour Print 3MF (Bambu)",
-                              "Hi3DPaintMesh": "Paint Mesh (for UltraTex)"}
+                              "Hi3DPaintMesh": "Paint Mesh (for UltraTex)",
+                              "Hi3DInkCleanup": "Ink Cleanup (experimental)"}

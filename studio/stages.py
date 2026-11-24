@@ -15,7 +15,7 @@ STAGES = [
     ("paintmesh", "Paint mesh", "Simplifying the detail mesh for painting", {903}, 30),
     ("paint", "Painting", "UltraTex paints colour from your picture",
      {353, 354, 355, 356, 357, 358, 359, 361, 362, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377,
-      378, 383, 384, 385, 386, 387, 388}, 735),
+      378, 383, 384, 385, 386, 387, 388, 904, 905, 906}, 735),
     ("seal", "Seal", "WTiVo makes one closed solid", {900}, 95),
     ("print", "Print file", "Filling hollows, filament colours, Bambu slice check", {901}, 150),
 ]
@@ -48,4 +48,5 @@ SHOT_LABELS = {
     "370": "Painting setup: normals",
     "371": "Painting setup: depth",
     "373": "Painting setup: mask",
+    "906": "Outlines cleaned (experimental)",
 }

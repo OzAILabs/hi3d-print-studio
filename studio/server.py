@@ -40,6 +40,7 @@ OTHER_COMFY_URLS = [u for u in os.environ.get("HI3D_OTHER_COMFY", "http://127.0.
 JOBS = HERE / "jobs"
 STATIC = HERE / "static"
 BAMBU = Path(r"C:\Program Files\Bambu Studio\bambu-studio.exe")
+RECOLOUR_PY = ROOT / "comfyui_nodes" / "Hi3D-ColourPrint" / "recolour.py"
 PORT = int(os.environ.get("HI3D_STUDIO_PORT", "7870"))
 CLIENT_ID = "hi3d-print-studio-" + uuid.uuid4().hex[:8]
 TEMPLATE = json.loads((HERE / "workflow_api.json").read_text())
@@ -103,7 +104,9 @@ def read_shape_check(job):
 
 
 def public(job):
-    return {k: v for k, v in job.items() if not k.startswith("_")}
+    out = {k: v for k, v in job.items() if not k.startswith("_")}
+    out["can_retry_print"] = job.get("status") == "failed" and print_step_failed(job)
+    return out
 
 
 def load_jobs():
@@ -116,6 +119,7 @@ def load_jobs():
             job[k] = set(job.get(k) or [])
         if "shape_check" not in job:
             read_shape_check(job)
+        job["recolouring"] = False             # a remake cut short by a restart
         jobs[job["id"]] = job
 
 
@@ -546,6 +550,16 @@ def build_prompt(job, image_name, phase="full"):
         p[nid]["inputs"][field] = job["seeds"][nid]
     pr = p["901"]["inputs"]
     pr.update(height_mm=float(s["height_mm"]), colours=int(s["colours"]), printer=s["printer"])
+    if s.get("ink_cleanup"):
+        # Experimental: the painter and the print step's palette see the picture with its
+        # cartoon outlines replaced by the colours beside them (the shape still uses the original).
+        p["904"] = {"class_type": "Hi3DInkCleanup",
+                    "inputs": {"image": ["122", 0], "mask": ["248", 0], "line_width": 0.008}}
+        p["905"] = {"class_type": "ImageCropToMask",
+                    "inputs": dict(p["312"]["inputs"], images=["904", 0])}
+        p["906"] = {"class_type": "PreviewImage", "inputs": {"images": ["905", 0]}}
+        p["375"]["inputs"]["reference"] = ["904", 0]
+        pr["picture"] = ["905", 0]
     if phase == "full":
         return p
     # Only what this checkpoint (and the ones before it) needs.
@@ -684,6 +698,8 @@ async def api_create(request):
         "shape_model": "pixal3d" if params.get("shape_model") == "pixal3d" else "trellis2",
         "seed": int(params["seed"]) if params.get("seed", "").isdigit() else random.randint(1, 10_000_000),
         "gates": [g for g in GATE_ORDER if params.get(f"gate_{g}", "1") == "1"],
+        "ink_cleanup": params.get("ink_cleanup") == "1",
+        "batch": params.get("batch", "")[:40],
     }
     job, image_path = new_job(clean, image, filename)
     save_job(job)
@@ -850,6 +866,89 @@ async def api_stop_all(request):
                               "gpu_total": after and after[1]})
 
 
+async def api_recolour(request):
+    """Remake the print file with the filament colours the person chose (no re-painting)."""
+    job = jobs.get(request.match_info["jid"])
+    if not job or not (job.get("status") == "done" and job.get("project") or print_step_failed(job)):
+        raise web.HTTPBadRequest(text="Only a finished print can be recoloured")
+    if job.get("recolouring"):
+        raise web.HTTPBadRequest(text="Already remaking this print file")
+    body = await request.json()
+    palette = [str(h) for h in body.get("palette", [])]
+    if not 1 <= len(palette) <= 4 or not all(len(h) == 7 and h[0] == "#" and
+                                            all(c in "0123456789abcdefABCDEF" for c in h[1:]) for h in palette):
+        raise web.HTTPBadRequest(text="Choose 1 to 4 colours")
+    painted_3mf = first_painted_3mf(job)
+    painted_glb = job.get("outputs", {}).get("painted")
+    if not painted_3mf or not painted_3mf.exists() or not painted_glb or not Path(painted_glb).exists():
+        raise web.HTTPNotFound(text="The painted files for this print are missing")
+    if job.get("project"):
+        job.setdefault("first_project", job["project"])
+    n = job.get("recolours", 0) + 1
+    name = f"print_recolour{n}"
+    job.update(recolouring=True, recolour_error=None)
+    save_job(job)
+    await broadcast(job)
+    asyncio.create_task(run_recolour(job, painted_3mf, painted_glb, name, palette, n))
+    return web.json_response({"ok": True})
+
+
+def first_painted_3mf(job):
+    """The painted 3MF the print step wrote (it holds the final print mesh)."""
+    if job.get("first_project") or job.get("project"):
+        first = Path(job.get("first_project") or job["project"])
+        return first.with_name(first.name.replace("_bambu.3mf", "_painted.3mf"))
+    found = sorted((COMFY_OUT / "studio" / job["id"]).glob("print_0*_painted.3mf"))
+    return found[-1] if found else None
+
+
+def print_step_failed(job):
+    """Everything was made, but Bambu's slice check refused the print file: it can be retried."""
+    p = first_painted_3mf(job)
+    return (job.get("status") == "failed" and not job.get("project") and bool((job.get("summary") or {}).get("palette"))
+            and p is not None and p.exists() and bool(job.get("outputs", {}).get("painted")))
+
+
+async def run_recolour(job, painted_3mf, painted_glb, name, palette, n):
+    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+    proc = await asyncio.create_subprocess_exec(
+        str(COMFY_PY), "-s", str(RECOLOUR_PY), str(painted_3mf), str(painted_glb), str(painted_3mf.parent), name,
+        job["params"]["printer"], str(float(TEMPLATE["901"]["inputs"]["min_island_mm2"])), *palette,
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    web_procs.add(proc)
+    try:
+        out, _ = await proc.communicate()
+    finally:
+        web_procs.discard(proc)
+    job["recolouring"] = False
+    try:
+        report = json.loads(out.decode(errors="replace").strip().splitlines()[-1])
+        project = report.get("bambu", {}).get("project")
+        if not project:
+            raise ValueError(report.get("bambu", {}).get("error") or "no project written")
+    except Exception as e:
+        job["recolour_error"] = f"Could not remake the print file: {e}"[:400]
+        log(f"recolour {job['id']} failed: {out.decode(errors='replace')[-600:]}")
+        save_job(job)
+        await broadcast(job)
+        return
+    job["recolours"] = n
+    if job.get("status") == "failed":                   # a print file that failed the slice check, now made
+        job.update(status="done", error=None, progress=1.0)
+        job["stages"]["print"].update(state="done", fraction=1.0)
+    job["report"] = report
+    job["summary"] = report.get("summary")
+    job["project"] = project
+    if report.get("preview"):
+        web_dir = job_dir(job["id"]) / "web"
+        shutil.copyfile(report["preview"], web_dir / "print.glb")
+        job["models"]["print"] = {"file": f"web/print.glb?v={int(time.time())}", "label": "Print colours"}
+    log(f"recoloured {job['id']}: {palette} -> {job['summary'].get('print_hours')} h")
+    save_job(job)
+    await broadcast(job)
+
+
 async def api_open_bambu(request):
     job = jobs.get(request.match_info["jid"])
     if not job or not job.get("project") or not Path(job["project"]).exists():
@@ -964,6 +1063,7 @@ def main():
         web.post("/api/jobs/{jid}/continue", api_continue),
         web.post("/api/jobs/{jid}/retry", api_retry),
         web.post("/api/jobs/{jid}/open-bambu", api_open_bambu),
+        web.post("/api/jobs/{jid}/recolour", api_recolour),
         web.post("/api/jobs/{jid}/open-folder", api_open_folder),
         web.delete("/api/jobs/{jid}", api_delete),
         web.get("/api/status", api_status),

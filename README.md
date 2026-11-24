@@ -41,6 +41,15 @@ the dragon is a hand-painted picture. Flat colours print much faster than painte
   (cut-out, UltraTex's painted views) and a 3D viewer that adds each model as it is made.
 - **Checkpoints**: optional stops after the *shape* (~3 min) and the *detail* (~7 min). Continue,
   *try another* (re-run just that step with a new seed), or stop — before the long painting step.
+  The shape checkpoint warns when the shape came out as a flat slab (a cardboard cut-out).
+- **Batch**: pick several pictures at once and each becomes its own print, queued back to back —
+  untick the checkpoints and leave it running overnight.
+- **Choose the filament colours** of a finished print: change, drop or add colours and the print
+  file is remade in about a minute, without re-painting (for example, drop a near-black that only
+  paints smudges).
+- **Experimental: clean up cartoon outlines** before painting, so a line-art picture's black ink
+  doesn't come back as dark smudges on the sides and back.
+- **Stop everything**: one button cancels every job, stops the engine and frees the graphics memory.
 - **Real print files**: the Hi3D detail mesh is sealed with WTiVo, enclosed hollows (open-bottomed
   busts, shells with windows) are filled solid automatically, colours are reduced to your filament
   count, and Bambu Studio builds and slices the project as a check.

@@ -20,7 +20,10 @@ from pathlib import Path
 
 import numpy as np
 
-from . import threemf
+try:
+    from . import threemf
+except ImportError:          # run as a plain script (recolour.py)
+    import threemf
 
 GLTF_TO_PRINT = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
 """glTF is Y-up with the front towards +Z; printers want Z-up with the front towards -Y."""
@@ -236,15 +239,28 @@ def _close(mesh, report):
     return mesh
 
 
-def place_on_plate(mesh, bed=180.0, tower_width=40.0, margin=5.0):
-    """Sit on the plate; leave a strip on the left for the prime tower. Returns tower x, y."""
+def place_on_plate(mesh, bed=180.0, tower_width=40.0, tower_depth=60.0, margin=5.0, clearance=25.0):
+    """Sit on the plate with room for the prime tower. Returns the tower's x, y.
+
+    Bambu's slice check rejects a tower that ends up close to the model ("G-code
+    conflicts"): a 110 mm wide logo centred beside a left-hand tower was only 12 mm
+    away. So the tower goes in a strip on the left when the model leaves ``clearance``
+    there, otherwise in a strip at the front with the model pushed to the back.
+    """
     lo, hi = mesh.bounds
     width, depth = hi[0] - lo[0], hi[1] - lo[1]
-    left = margin + tower_width + margin
-    cx = left + (bed - margin - left) / 2.0 if width <= bed - margin - left else bed / 2.0
-    cy = bed / 2.0
+    strip = margin + tower_width + clearance            # left strip the tower needs
+    front = margin + tower_depth + clearance             # front strip the tower needs
+    if width <= bed - margin - strip or depth > bed - margin - front:
+        cx = strip + (bed - margin - strip) / 2.0 if width <= bed - margin - strip else bed / 2.0
+        cy = bed / 2.0
+        tower = (margin, max(margin, cy - 30.0))
+    else:
+        cx = bed / 2.0
+        cy = front + (bed - margin - front) / 2.0
+        tower = (margin, margin)
     mesh.apply_translation([cx - (lo[0] + hi[0]) / 2, cy - (lo[1] + hi[1]) / 2, -lo[2]])
-    return margin, max(margin, cy - 30.0)
+    return tower
 
 
 # --------------------------------------------------------------------- colour transfer
@@ -548,6 +564,12 @@ def summarise(proj, palette_hex, rep):
             "per_filament_g": [round(f.get("total_used_g", 0), 1) for f in p.get("filaments", [])],
             "warning": p.get("warning_message") or "",
         })
+    if proj.get("slice_failed") and proj.get("project"):
+        out["slice_failed"] = True
+        out["warning"] = ("The slice check did not pass, so print time and filament are not known yet. "
+                          f"Bambu Studio said: {(out['message'] or '').strip()} "
+                          "The project file is complete: open it in Bambu Studio and move, resize or "
+                          "re-slice it there.")
     return out
 
 

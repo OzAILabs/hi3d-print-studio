@@ -153,8 +153,18 @@ def make_project(painted_3mf, out_3mf, palette_hex, printer="A1 mini 0.4", slice
         if result:
             report["bambu_result"] = {k: result[k] for k in ("return_code", "error_string", "sliced_plates")
                                       if k in result}
-        if not project.exists():
+        if not project.exists() and slice_check:
+            # The slice check failed (say, the prime tower too close to a wide model). The
+            # project is still worth having: Bambu Studio can move, resize or re-slice it.
+            report["slice_failed"] = True
             report["log_tail"] = log[-1500:]
+            args = [a for a in args if a not in ("--slice", "0")]
+            code2, _, log2 = run_bambu([*args, str(src)], work)
+            report["bambu_exit_no_slice"] = code2
+            if not project.exists():
+                report["log_tail"] = log2[-1500:]
+        if not project.exists():
+            report.setdefault("log_tail", log[-1500:])
             return report
         _set_filament_colours(project, out_3mf, palette_hex)
         report["project"] = str(out_3mf)
