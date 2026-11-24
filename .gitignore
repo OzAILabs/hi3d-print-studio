@@ -16,3 +16,4 @@ __pycache__/
 setup_*.sh
 setup*.log
 result.json
+parts/

@@ -41,6 +41,7 @@ JOBS = HERE / "jobs"
 STATIC = HERE / "static"
 BAMBU = Path(r"C:\Program Files\Bambu Studio\bambu-studio.exe")
 RECOLOUR_PY = ROOT / "comfyui_nodes" / "Hi3D-ColourPrint" / "recolour.py"
+SPLIT_PY = ROOT / "split" / "split_job.py"          # experimental: split a print into pieces
 PORT = int(os.environ.get("HI3D_STUDIO_PORT", "7870"))
 CLIENT_ID = "hi3d-print-studio-" + uuid.uuid4().hex[:8]
 TEMPLATE = json.loads((HERE / "workflow_api.json").read_text())
@@ -120,6 +121,7 @@ def load_jobs():
         if "shape_check" not in job:
             read_shape_check(job)
         job["recolouring"] = False             # a remake cut short by a restart
+        job["splitting"] = False
         jobs[job["id"]] = job
 
 
@@ -949,13 +951,72 @@ async def run_recolour(job, painted_3mf, painted_glb, name, palette, n):
     await broadcast(job)
 
 
+async def api_split(request):
+    """Experimental: cut a finished print into pegged pieces along P3-SAM's parts."""
+    job = jobs.get(request.match_info["jid"])
+    if not job or job.get("status") != "done" or not job.get("project"):
+        raise web.HTTPBadRequest(text="Only a finished print can be split")
+    if job.get("splitting"):
+        raise web.HTTPBadRequest(text="Already splitting this print")
+    busy = [j for j in jobs.values() if j.get("status") in ("submitting", "queued", "running") or j.get("splitting")]
+    if busy:
+        raise web.HTTPBadRequest(text="Wait until nothing else is running: the part finder needs the whole graphics card")
+    pieces = int((await request.json()).get("pieces", 4))
+    if not 2 <= pieces <= 8:
+        raise web.HTTPBadRequest(text="Choose 2 to 8 pieces")
+    painted = first_painted_3mf(job)
+    if not painted or not painted.exists():
+        raise web.HTTPNotFound(text="The painted print file for this job is missing")
+    job.update(splitting=True, split_error=None)
+    save_job(job)
+    await broadcast(job)
+    asyncio.create_task(run_split(request.app, job, painted, pieces))
+    return web.json_response({"ok": True})
+
+
+async def run_split(app, job, painted, pieces):
+    try:      # the part finder needs ~21 GB: ask the idle engine to let go of its models first
+        await app["session"].post(COMFY_URL + "/free", json={"unload_models": True, "free_memory": True},
+                                  timeout=aiohttp.ClientTimeout(total=10))
+    except Exception:
+        pass
+    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+    palette = ",".join((job.get("summary") or {}).get("palette") or [])
+    proc = await asyncio.create_subprocess_exec(
+        str(COMFY_PY), "-s", str(SPLIT_PY), str(painted), str(job_dir(job["id"]) / "split"), str(pieces), palette,
+        job["params"]["printer"], stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    web_procs.add(proc)
+    try:
+        out, _ = await proc.communicate()
+    finally:
+        web_procs.discard(proc)
+    job["splitting"] = False
+    text = out.decode(errors="replace").strip()
+    try:
+        result = json.loads(text.splitlines()[-1])
+        if not result.get("project"):
+            raise ValueError(result.get("message") or "no project written")
+        result["asked"] = pieces
+        job["split"] = result
+        log(f"split {job['id']} into {result['pieces']} pieces")
+    except Exception as e:
+        last = text.splitlines()[-1] if text else str(e)
+        job["split_error"] = f"Could not split this print: {last}"[:400]
+        log(f"split {job['id']} failed: {text[-800:]}")
+    save_job(job)
+    await broadcast(job)
+
+
 async def api_open_bambu(request):
     job = jobs.get(request.match_info["jid"])
-    if not job or not job.get("project") or not Path(job["project"]).exists():
+    which = request.query.get("what")
+    path = (job.get("split") or {}).get("project") if job and which == "split" else (job or {}).get("project")
+    if not job or not path or not Path(path).exists():
         raise web.HTTPNotFound(text="No project file for this job")
     if not BAMBU.exists():
         raise web.HTTPNotFound(text="Bambu Studio is not installed")
-    subprocess.Popen([str(BAMBU), job["project"]], close_fds=True)
+    subprocess.Popen([str(BAMBU), path], close_fds=True)
     return web.json_response({"ok": True})
 
 
@@ -984,6 +1045,13 @@ async def api_delete(request):
 
 async def api_file(request):
     jid, rel = request.match_info["jid"], request.match_info["path"]
+    if rel == "split.3mf":
+        job = jobs.get(jid)
+        path = (job or {}).get("split", {}).get("project")
+        if path and Path(path).exists():
+            return web.FileResponse(path, headers={
+                "Content-Disposition": f'attachment; filename="{job["name"]}_pieces_bambu.3mf"'})
+        raise web.HTTPNotFound()
     if rel == "project.3mf":
         job = jobs.get(jid)
         if job and job.get("project"):
@@ -1064,6 +1132,7 @@ def main():
         web.post("/api/jobs/{jid}/retry", api_retry),
         web.post("/api/jobs/{jid}/open-bambu", api_open_bambu),
         web.post("/api/jobs/{jid}/recolour", api_recolour),
+        web.post("/api/jobs/{jid}/split", api_split),
         web.post("/api/jobs/{jid}/open-folder", api_open_folder),
         web.delete("/api/jobs/{jid}", api_delete),
         web.get("/api/status", api_status),

@@ -50,6 +50,8 @@ the dragon is a hand-painted picture. Flat colours print much faster than painte
 - **Experimental: clean up cartoon outlines** before painting, so a line-art picture's black ink
   doesn't come back as dark smudges on the sides and back.
 - **Stop everything**: one button cancels every job, stops the engine and frees the graphics memory.
+- **Experimental: split into pieces** (optional install, see below): cuts a finished print into 2–8
+  closed pieces along its parts, with a peg and matching hole at each joint, as its own Bambu project.
 - **Real print files**: the Hi3D detail mesh is sealed with WTiVo, enclosed hollows (open-bottomed
   busts, shells with windows) are filled solid automatically, colours are reduced to your filament
   count, and Bambu Studio builds and slices the project as a check.
@@ -126,6 +128,25 @@ picture ─► cut-out (BiRefNet) ─► shape (TRELLIS.2 or Pixal3D) ─► rem
 The studio (`studio/`) is a small aiohttp server that runs ComfyUI hidden in the background and
 drives the workflow through its API; the browser gets live state over Server-Sent Events. The
 print step is a ComfyUI node in `comfyui_nodes/Hi3D-ColourPrint/`.
+
+## Experimental: split into pieces
+
+Finished prints have a **Split into pieces** section. It finds the model's parts with Tencent's
+[P3-SAM](https://github.com/Tencent-Hunyuan/Hunyuan3D-Part) part finder, merges them down to the
+number of pieces you pick, cuts the solid along them (a flat cut where it separates the parts
+cleanly, a smooth curved cut where parts wrap around each other), adds the largest peg that fits
+at each joint with a hole 0.15 mm larger in the neighbouring piece, and builds a separate Bambu
+project. Pieces keep their painted colours.
+
+It needs a separate install (about 7 GB, all inside `parts/`):
+
+```bash
+bash setup/install_split.sh
+```
+
+Limits: the part finder uses about 21 GB of graphics memory, so it only runs while nothing else
+is; borders follow the AI's parts and can be ragged; organic busts (like the dragon) often come
+back as one big part; peg fit is untested on real prints. Code: `split/`.
 
 ## Troubleshooting
 

@@ -123,7 +123,7 @@ def run_bambu(args, workdir, timeout=1800):
 
 
 def make_project(painted_3mf, out_3mf, palette_hex, printer="A1 mini 0.4", slice_check=True,
-                 wipe_tower_xy=(5.0, 100.0)):
+                 wipe_tower_xy=(5.0, 100.0), extra_args=()):
     """Bambu Studio project for ``printer`` with one filament per palette colour.
 
     The CLI loads the printer, process and filament presets, places the model on the
@@ -144,7 +144,7 @@ def make_project(painted_3mf, out_3mf, palette_hex, printer="A1 mini 0.4", slice
         args = ["--load-settings",
                 f"{_write_preset(work, 'machine', machine)};{_write_preset(work, 'process', process, **tower)}",
                 "--load-filaments", ";".join(str(p) for p in filaments),
-                "--ensure-on-bed", "--outputdir", str(work), "--export-3mf", "project.3mf"]
+                "--ensure-on-bed", *extra_args, "--outputdir", str(work), "--export-3mf", "project.3mf"]
         if slice_check:
             args = ["--slice", "0", *args]
         code, result, log = run_bambu([*args, str(src)], work)

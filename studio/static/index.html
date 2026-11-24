@@ -6,7 +6,7 @@
 <title>Hi3D Print Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/app.css?v=10">
+<link rel="stylesheet" href="/static/app.css?v=11">
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
 </head>
 <body>
@@ -167,6 +167,25 @@
           <span id="recolourState" class="muted"></span>
         </div>
         <div id="warn" class="warn" hidden></div>
+        <div class="splitBox">
+          <div class="splitHead"><b>Split into pieces</b><span class="expTag">Experimental</span></div>
+          <p>Cuts the model into separate pieces along its parts (found by the P3-SAM part finder), with a peg and
+            matching hole at each joint, as its own Bambu project. Uses the whole graphics card for about half a
+            minute; the first split of a print takes 2&ndash;3 minutes, other piece counts about 2.</p>
+          <div class="splitRow">
+            <label>Pieces <select id="splitN"><option>2</option><option>3</option><option selected>4</option>
+              <option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+            <button id="splitGo" class="ghost">Split</button>
+            <span id="splitState" class="muted"></span>
+          </div>
+          <div id="splitResult" class="splitResult" hidden>
+            <div id="splitStats" class="muted"></div>
+            <div class="splitActions">
+              <button id="splitBambu" class="ghost">Open pieces in Bambu Studio</button>
+              <a id="splitDl" class="ghost btn" download>Download pieces 3MF</a>
+            </div>
+          </div>
+        </div>
       </div>
       <div id="errorBox" class="card errorBox" hidden></div>
     </section>
@@ -175,6 +194,6 @@
 
 <div id="lightbox" class="lightbox" hidden><img alt=""><div class="lbCap"></div></div>
 <div id="toast" class="toast" hidden></div>
-<script src="/static/app.js?v=14"></script>
+<script src="/static/app.js?v=15"></script>
 </body>
 </html>

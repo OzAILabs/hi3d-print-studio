@@ -101,6 +101,15 @@ h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .rcsAdd { padding: 10px 14px; }
 .recolourActions { display: flex; gap: 8px; }
 .errorBox button { margin-top: 12px; }
+.splitBox { border-top: 1px dashed var(--line2); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.splitHead { display: flex; align-items: center; gap: 8px; }
+.expTag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--warn);
+  border: 1px solid rgba(245, 184, 74, 0.4); border-radius: 999px; padding: 1px 8px; }
+.splitBox p { margin: 0; color: var(--muted); font-size: 13px; }
+.splitRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.splitRow select { margin-left: 6px; background: var(--bg2); color: var(--text); border: 1px solid var(--line2); border-radius: 8px; padding: 6px 8px; }
+.splitResult { display: flex; flex-direction: column; gap: 8px; }
+.splitActions { display: flex; gap: 8px; flex-wrap: wrap; }
 .drop.has .dropHint { opacity: 0; }
 .drop.has:hover .dropHint { opacity: 1; background: rgba(11, 13, 18, 0.7); }
 .dropHint {

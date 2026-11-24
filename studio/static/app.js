@@ -352,10 +352,26 @@ function renderResult(job) {
   $("#palette").innerHTML = pal.map((hex, i) => `
     <div class="sw"><i style="background:${hex}"></i><div>Filament ${i + 1}<br><b>${hex}</b>${sm.per_filament_g ? ` · ${Math.round(sm.per_filament_g[i] || 0)} g` : ""}</div></div>`).join("");
   renderRecolour(job);
+  renderSplit(job);
   const w = sm && sm.warning;
   $("#warn").hidden = !w;
   $("#warn").textContent = !w ? "" : sm.slice_failed ? w
     : `Bambu Studio says: ${w}` + (/floating|support/i.test(w) ? " Turn on supports (tree supports suit figures) before printing." : "");
+}
+
+// ---------------------------------------------------------------- split into pieces (experimental)
+function renderSplit(job) {
+  const busy = !!job.splitting, sp = job.split;
+  $("#splitGo").disabled = busy;
+  $("#splitGo").textContent = busy ? "Splitting…" : sp ? "Split again" : "Split";
+  $("#splitState").textContent = busy ? "Finding the parts and cutting (2–3 minutes)…" : job.split_error || "";
+  $("#splitResult").hidden = !sp || busy;
+  if (!sp || busy) return;
+  const bits = [`${sp.pieces} pieces`, `${sp.pegs} of ${sp.joints} joints pegged`];
+  if (sp.sliced) bits.push(`${sp.print_hours} h print`, `${sp.colour_changes} colour changes`);
+  else bits.push("not sliced yet: arrange it in Bambu Studio");
+  $("#splitStats").textContent = bits.join(" · ");
+  $("#splitDl").href = fileUrl(job, "split.3mf");
 }
 
 // ---------------------------------------------------------------- choose filament colours
@@ -450,6 +466,19 @@ ${what}`)) return;
       renderRecolour(job);
       toast("Remaking the print file with your colours (about a minute)…");
     } catch (e) { toast(e.message); }
+  });
+  $("#splitGo").addEventListener("click", async () => {
+    const job = state.jobs[state.sel];
+    try {
+      const r = await fetch(`/api/jobs/${job.id}/split`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pieces: +$("#splitN").value }) });
+      if (!r.ok) throw new Error(await r.text());
+      job.splitting = true; renderSplit(job);
+    } catch (e) { toast(e.message); }
+  });
+  $("#splitBambu").addEventListener("click", async () => {
+    try { await post(`/api/jobs/${state.sel}/open-bambu?what=split`); toast("Opening the pieces in Bambu Studio…"); }
+    catch (e) { toast(e.message); }
   });
   $("#folderBtn").addEventListener("click", async () => {
     try { await post(`/api/jobs/${state.sel}/open-folder`); } catch (e) { toast(e.message); }
