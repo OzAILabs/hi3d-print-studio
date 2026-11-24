@@ -53,6 +53,16 @@ h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .pill.busy i { background: var(--warn); animation: pulse 1.2s infinite; }
 .pill.err i { background: var(--bad); }
 .pill.quiet { font-family: "JetBrains Mono", monospace; font-size: 12px; }
+.pills { align-items: center; }
+.stopAll {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px 6px 11px; border-radius: 999px;
+  border: 1px solid rgba(255, 107, 122, 0.45); background: rgba(255, 107, 122, 0.10); color: var(--bad);
+  font-size: 12.5px; font-weight: 600; cursor: pointer; transition: .15s;
+}
+.stopAll svg { width: 14px; height: 14px; }
+.stopAll:hover { background: rgba(255, 107, 122, 0.22); border-color: var(--bad); }
+.stopAll:disabled { opacity: .6; cursor: progress; }
+.stopAll.busy svg { animation: pulse 1s infinite; }
 
 /* layout */
 .layout { display: grid; grid-template-columns: 360px 1fr; gap: 20px; padding: 20px 24px 40px; max-width: 1680px; margin: 0 auto; }

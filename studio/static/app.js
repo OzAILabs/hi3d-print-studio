@@ -31,7 +31,7 @@ function toast(msg) {
   t.textContent = msg;
   t.hidden = false;
   clearTimeout(t._h);
-  t._h = setTimeout(() => (t.hidden = true), 3200);
+  t._h = setTimeout(() => (t.hidden = true), Math.max(3200, msg.length * 70));
 }
 
 // ---------------------------------------------------------------- new print form
@@ -320,6 +320,28 @@ function initActions() {
   gateAction("#gateStop", "cancel", "Stopped.");
   $("#bambuBtn").addEventListener("click", async () => {
     try { await post(`/api/jobs/${state.sel}/open-bambu`); toast("Opening Bambu Studio…"); } catch (e) { toast(e.message); }
+  });
+  $("#stopAll").addEventListener("click", async () => {
+    const live = Object.values(state.jobs).filter((j) => ACTIVE.has(j.status)).length;
+    const what = live ? `This cancels ${live} job${live > 1 ? "s" : ""}, stops the engine and frees the graphics memory.`
+                      : "Nothing is running. This frees the graphics memory the engine is holding.";
+    if (!confirm(`Stop everything?
+
+${what}`)) return;
+    const btn = $("#stopAll");
+    btn.disabled = true; btn.classList.add("busy"); $("span", btn).textContent = "Stopping…";
+    try {
+      const r = await post("/api/stop-all");
+      const gb = (m) => (m / 1024).toFixed(1);
+      const parts = [r.stopped.length ? `Stopped ${r.stopped.length} job${r.stopped.length > 1 ? "s" : ""}` : "Nothing was running"];
+      if (r.gpu_before != null && r.gpu_after != null) parts.push(`GPU memory ${gb(r.gpu_before)} → ${gb(r.gpu_after)} GB`);
+      if (r.engine_restarted) parts.push("engine restarting (about 20 s)");
+      const busy = (r.others || []).filter((o) => !o.freed);
+      if (busy.length) parts.push("your other ComfyUI is busy, so it was left alone");
+      toast(parts.join(" · "));
+      pollStatus();
+    } catch (e) { toast(e.message); }
+    finally { btn.disabled = false; btn.classList.remove("busy"); $("span", btn).textContent = "Stop everything"; }
   });
   $("#folderBtn").addEventListener("click", async () => {
     try { await post(`/api/jobs/${state.sel}/open-folder`); } catch (e) { toast(e.message); }

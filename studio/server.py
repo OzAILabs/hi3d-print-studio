@@ -34,6 +34,9 @@ COMFY_DIR = ROOT / "ComfyUI_py312"
 COMFY_PY = COMFY_DIR / "python_embeded" / "python.exe"
 COMFY_OUT = COMFY_DIR / "ComfyUI" / "output"
 COMFY_URL = "http://127.0.0.1:8189"
+# Other ComfyUI installs on this PC: "Stop everything" asks them to unload their models too,
+# but only when they are idle (their work is not the studio's to cancel).
+OTHER_COMFY_URLS = [u for u in os.environ.get("HI3D_OTHER_COMFY", "http://127.0.0.1:8188").split(",") if u]
 JOBS = HERE / "jobs"
 STATIC = HERE / "static"
 BAMBU = Path(r"C:\Program Files\Bambu Studio\bambu-studio.exe")
@@ -60,6 +63,8 @@ jobs: dict[str, dict] = {}
 by_prompt: dict[str, str] = {}
 listeners: set[asyncio.Queue] = set()
 engine = {"state": "starting", "detail": "", "process": None}
+web_procs: set = set()          # webmodel.py helpers currently running
+ACTIVE = ("submitting", "queued", "running", "paused")
 
 
 def log(msg):
@@ -299,6 +304,8 @@ async def on_comfy(app, ev):
     if not jid:
         return
     job = jobs[jid]
+    if job.get("status") == "cancelled":       # stopped: late events must not revive it
+        return
     now = time.time()
     if kind == "execution_start":
         job["status"] = "running"
@@ -438,7 +445,11 @@ async def make_web_model(jid, out_dir, key, label, faces=200_000):
         str(COMFY_PY), "-s", str(HERE / "webmodel.py"), str(src), str(dst), str(faces), mode,
         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-    out, _ = await proc.communicate()
+    web_procs.add(proc)
+    try:
+        out, _ = await proc.communicate()
+    finally:
+        web_procs.discard(proc)
     if proc.returncode != 0 or not dst.exists():
         log(f"web model {key} failed: {out.decode(errors='replace')[-400:]}")
         return
@@ -548,11 +559,15 @@ async def submit(app, job, image_path):
     form.add_field("overwrite", "true")
     async with session.post(COMFY_URL + "/upload/image", data=form) as r:
         up = await r.json()
+    if job.get("status") == "cancelled":
+        return
     job["image_name"] = f"{up.get('subfolder', 'studio')}/{up['name']}" if up.get("subfolder") else up["name"]
     await submit_phase(app, job, first_phase(job))
 
 
 async def submit_phase(app, job, phase):
+    if job.get("status") == "cancelled":
+        return
     prompt = build_prompt(job, job["image_name"], phase)
     async with app["session"].post(COMFY_URL + "/prompt", json={"prompt": prompt, "client_id": CLIENT_ID}) as r:
         res = await r.json()
@@ -699,6 +714,113 @@ async def api_cancel(request):
     return web.json_response({"ok": True})
 
 
+def gpu_memory():
+    try:
+        out = subprocess.run(["nvidia-smi", "--query-gpu=memory.used,memory.total", "--format=csv,noheader,nounits"],
+                             capture_output=True, text=True, timeout=5,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout.strip().split(", ")
+        return int(out[0]), int(out[1])
+    except Exception:
+        return None
+
+
+def kill_engine_tree():
+    """Kill the studio's ComfyUI (whoever started it) and everything it launched."""
+    import psutil
+    port = int(COMFY_URL.rsplit(":", 1)[1])
+    pids = {c.pid for c in psutil.net_connections("tcp")
+            if c.laddr and c.laddr.port == port and c.status == psutil.CONN_LISTEN and c.pid}
+    if engine.get("process") and engine["process"].poll() is None:
+        pids.add(engine["process"].pid)
+    procs = []
+    for pid in pids:
+        try:
+            parent = psutil.Process(pid)
+            procs += parent.children(recursive=True) + [parent]
+        except psutil.NoSuchProcess:
+            pass
+    for pr in procs:
+        try:
+            pr.kill()
+        except psutil.NoSuchProcess:
+            pass
+    psutil.wait_procs(procs, timeout=15)
+    engine["process"] = None
+    return len(procs)
+
+
+async def api_stop_all(request):
+    """The master stop: cancel every job, stop the engine's work and free the graphics memory.
+
+    ComfyUI only notices an interrupt between steps; a long node (sealing, the print step,
+    Bambu's slicer) can run for minutes without looking. If the engine is still busy after
+    a short wait, it is restarted, which always stops the work and frees its memory.
+    """
+    app = request.app
+    session = app["session"]
+    before = gpu_memory()
+    stopped = []
+    for job in jobs.values():
+        if job.get("status") in ACTIVE:
+            job["error"] = "Stopped with Stop everything."
+            await finish(app, job, ok=False, status="cancelled")
+            stopped.append(job["id"])
+    for proc in list(web_procs):
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            pass
+
+    restarted = False
+    timeout = aiohttp.ClientTimeout(total=10)
+    if await comfy_up(session):
+        try:
+            await session.post(COMFY_URL + "/queue", json={"clear": True}, timeout=timeout)
+            await session.post(COMFY_URL + "/interrupt", json={}, timeout=timeout)
+            busy = True
+            for _ in range(10):
+                async with session.get(COMFY_URL + "/queue", timeout=timeout) as r:
+                    q = await r.json()
+                busy = bool(q.get("queue_running") or q.get("queue_pending"))
+                if not busy:
+                    break
+                await asyncio.sleep(1)
+        except Exception:
+            busy = True
+        if busy:
+            log("stop everything: engine still busy after the interrupt, restarting it")
+            engine.update(state="starting", detail="Restarting the engine to stop its work")
+            await broadcast_engine()
+            await asyncio.get_running_loop().run_in_executor(pool, kill_engine_tree)
+            restarted = True
+            asyncio.create_task(ensure_engine(app))
+        else:
+            await session.post(COMFY_URL + "/free", json={"unload_models": True, "free_memory": True},
+                               timeout=timeout)
+
+    others = []
+    for url in OTHER_COMFY_URLS:
+        try:
+            async with session.get(url + "/queue", timeout=aiohttp.ClientTimeout(total=3)) as r:
+                q = await r.json()
+            if q.get("queue_running") or q.get("queue_pending"):
+                others.append({"url": url, "freed": False, "why": "busy with its own work"})
+                continue
+            await session.post(url + "/free", json={"unload_models": True, "free_memory": True},
+                               timeout=aiohttp.ClientTimeout(total=10))
+            others.append({"url": url, "freed": True})
+        except Exception:
+            pass                                    # not running
+
+    await asyncio.sleep(2)                          # let the driver hand the memory back
+    after = gpu_memory()
+    log(f"stop everything: {len(stopped)} job(s) stopped, engine restarted={restarted}, "
+        f"GPU {before and before[0]} -> {after and after[0]} MiB")
+    return web.json_response({"stopped": stopped, "engine_restarted": restarted, "others": others,
+                              "gpu_before": before and before[0], "gpu_after": after and after[0],
+                              "gpu_total": after and after[1]})
+
+
 async def api_open_bambu(request):
     job = jobs.get(request.match_info["jid"])
     if not job or not job.get("project") or not Path(job["project"]).exists():
@@ -816,6 +938,7 @@ def main():
         web.post("/api/jobs/{jid}/open-folder", api_open_folder),
         web.delete("/api/jobs/{jid}", api_delete),
         web.get("/api/status", api_status),
+        web.post("/api/stop-all", api_stop_all),
         web.get("/api/events", api_events),
         web.get("/files/{jid}/{path:.+}", api_file),
         web.static("/static", STATIC),
