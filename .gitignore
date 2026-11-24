@@ -1,0 +1,18 @@
+# Installs, models and downloads (built by Setup.bat)
+ComfyUI_py312/
+ComfyUI_windows_portable/
+downloads/
+
+# Your work
+studio/jobs/
+test_images/
+checks/
+
+# Logs, caches, local settings
+*.log
+__pycache__/
+*.pyc
+.claude/
+setup_*.sh
+setup*.log
+result.json

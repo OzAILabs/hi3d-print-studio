@@ -1,0 +1,1694 @@
+{
+ "3": {
+  "inputs": {
+   "seed": 56,
+   "steps": 12,
+   "cfg": 7.5,
+   "sampler_name": "euler",
+   "scheduler": "normal",
+   "denoise": 1.0,
+   "model": [
+    "108",
+    0
+   ],
+   "positive": [
+    "314",
+    0
+   ],
+   "negative": [
+    "315",
+    0
+   ],
+   "latent_image": [
+    "87",
+    0
+   ]
+  },
+  "class_type": "KSampler",
+  "_meta": {
+   "title": "KSampler",
+   "cnr_id": "comfy-core",
+   "ver": "0.17.0"
+  }
+ },
+ "4": {
+  "inputs": {
+   "algorithm": "basic",
+   "threshold": 0.6,
+   "voxel": [
+    "119",
+    0
+   ]
+  },
+  "class_type": "VoxelToMesh",
+  "_meta": {
+   "title": "Voxel to Mesh",
+   "cnr_id": "comfy-core",
+   "ver": "0.17.0"
+  }
+ },
+ "15": {
+  "inputs": {
+   "clip_name": "dino_v3_L_naf_fp32.safetensors"
+  },
+  "class_type": "CLIPVisionLoader",
+  "_meta": {
+   "title": "Load CLIP Vision",
+   "cnr_id": "comfy-core",
+   "ver": "0.21.1"
+  }
+ },
+ "18": {
+  "inputs": {
+   "seed": 42,
+   "steps": 20,
+   "cfg": 7.5,
+   "sampler_name": "euler",
+   "scheduler": "normal",
+   "denoise": 1.0,
+   "model": [
+    "126",
+    0
+   ],
+   "positive": [
+    "91",
+    0
+   ],
+   "negative": [
+    "91",
+    1
+   ],
+   "latent_image": [
+    "91",
+    2
+   ]
+  },
+  "class_type": "KSampler",
+  "_meta": {
+   "title": "KSampler",
+   "cnr_id": "comfy-core",
+   "ver": "0.17.0"
+  }
+ },
+ "23": {
+  "inputs": {
+   "seed": 42,
+   "steps": 12,
+   "cfg": 7.5,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1.0,
+   "model": [
+    "126",
+    0
+   ],
+   "positive": [
+    "94",
+    0
+   ],
+   "negative": [
+    "94",
+    1
+   ],
+   "latent_image": [
+    "94",
+    2
+   ]
+  },
+  "class_type": "KSampler",
+  "_meta": {
+   "title": "KSampler",
+   "cnr_id": "comfy-core",
+   "ver": "0.17.0"
+  }
+ },
+ "40": {
+  "inputs": {
+   "unet_name": "trellis_2_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader",
+  "_meta": {
+   "title": "Load Diffusion Model",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "55": {
+  "inputs": {
+   "model_name": "moge_2_vitl_normal_fp16.safetensors"
+  },
+  "class_type": "LoadMoGeModel",
+  "_meta": {
+   "title": "Load MoGe Model",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "56": {
+  "inputs": {
+   "resolution_level": 9,
+   "fov_x_degrees": 0.0,
+   "batch_size": 4,
+   "force_projection": true,
+   "apply_mask": true,
+   "refine_steps": 3,
+   "moge_model": [
+    "55",
+    0
+   ],
+   "image": [
+    "302",
+    0
+   ]
+  },
+  "class_type": "MoGeInference",
+  "_meta": {
+   "title": "Run MoGe Inference",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "87": {
+  "inputs": {
+   "batch_size": 1
+  },
+  "class_type": "EmptyTrellis2LatentStructure",
+  "_meta": {
+   "title": "Empty Trellis2 Latent Structure",
+   "cnr_id": "comfy-core",
+   "ver": "0.21.1"
+  }
+ },
+ "91": {
+  "inputs": {
+   "positive": [
+    "314",
+    0
+   ],
+   "negative": [
+    "315",
+    0
+   ],
+   "voxel": [
+    "119",
+    0
+   ]
+  },
+  "class_type": "Trellis2ShapeStage",
+  "_meta": {
+   "title": "Trellis2 Shape Stage",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "92": {
+  "inputs": {
+   "samples": [
+    "23",
+    0
+   ],
+   "vae": [
+    "117",
+    0
+   ]
+  },
+  "class_type": "VaeDecodeShapeTrellis",
+  "_meta": {
+   "title": "Trellis2 VAE Decode Shape",
+   "cnr_id": "comfy-core",
+   "ver": "0.17.0"
+  }
+ },
+ "94": {
+  "inputs": {
+   "target_resolution": 1024,
+   "positive": [
+    "91",
+    0
+   ],
+   "negative": [
+    "91",
+    1
+   ],
+   "shape_latent": [
+    "18",
+    0
+   ],
+   "vae": [
+    "117",
+    0
+   ]
+  },
+  "class_type": "Trellis2UpsampleStage",
+  "_meta": {
+   "title": "Trellis2 Upsample Stage",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "108": {
+  "inputs": {
+   "shift": 5.0,
+   "model": [
+    "125",
+    0
+   ]
+  },
+  "class_type": "ModelSamplingSD3",
+  "_meta": {
+   "title": "ModelSamplingSD3",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "117": {
+  "inputs": {
+   "vae_name": "trellis_2_shape_vae_bf16.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "Load VAE",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "119": {
+  "inputs": {
+   "resolution": "32",
+   "samples": [
+    "3",
+    0
+   ],
+   "vae": [
+    "117",
+    0
+   ]
+  },
+  "class_type": "VaeDecodeStructureTrellis2",
+  "_meta": {
+   "title": "Trellis2 VAE Decode Structure",
+   "cnr_id": "comfy-core",
+   "ver": "0.17.0"
+  }
+ },
+ "122": {
+  "inputs": {
+   "image": "dragon.jpg"
+  },
+  "class_type": "LoadImage",
+  "_meta": {
+   "title": "Load Image",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "125": {
+  "inputs": {
+   "multiplier": 0.7,
+   "model": [
+    "199",
+    0
+   ]
+  },
+  "class_type": "RescaleCFG",
+  "_meta": {
+   "title": "RescaleCFG",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "126": {
+  "inputs": {
+   "multiplier": 0.5,
+   "model": [
+    "279",
+    0
+   ]
+  },
+  "class_type": "RescaleCFG",
+  "_meta": {
+   "title": "RescaleCFG",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "192": {
+  "inputs": {
+   "bg_removal_model": [
+    "193",
+    0
+   ],
+   "image": [
+    "122",
+    0
+   ]
+  },
+  "class_type": "RemoveBackground",
+  "_meta": {
+   "title": "Remove Background",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "193": {
+  "inputs": {
+   "bg_removal_name": "birefnet.safetensors"
+  },
+  "class_type": "LoadBackgroundRemovalModel",
+  "_meta": {
+   "title": "Load Background Removal Model",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "199": {
+  "inputs": {
+   "cfg": 1.0,
+   "start_percent": 0.667,
+   "end_percent": 1.0,
+   "model": [
+    "318",
+    0
+   ]
+  },
+  "class_type": "CFGOverride",
+  "_meta": {
+   "title": "CFG Override",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "242": {
+  "inputs": {
+   "axis": "horizontal",
+   "unit": "degrees",
+   "moge_geometry": [
+    "56",
+    0
+   ]
+  },
+  "class_type": "MoGeGeometryToFOV",
+  "_meta": {
+   "title": "Get FoV from MoGe Geometry",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "246": {
+  "inputs": {
+   "viewport_state": "",
+   "width": 1024,
+   "height": 1024,
+   "model_3d": [
+    "247",
+    0
+   ]
+  },
+  "class_type": "Preview3DAdvanced",
+  "_meta": {
+   "title": "Preview 3D (Advanced)",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "247": {
+  "inputs": {
+   "mesh": [
+    "4",
+    0
+   ]
+  },
+  "class_type": "MeshToFile3D",
+  "_meta": {
+   "title": "Create 3D File (from Mesh)",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "248": {
+  "inputs": {
+   "switch": true,
+   "on_false": [
+    "122",
+    1
+   ],
+   "on_true": [
+    "192",
+    0
+   ]
+  },
+  "class_type": "ComfySwitchNode",
+  "_meta": {
+   "title": "Switch: Remove background",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "279": {
+  "inputs": {
+   "cfg": 1.0,
+   "start_percent": 0.769,
+   "end_percent": 1.0,
+   "model": [
+    "318",
+    0
+   ]
+  },
+  "class_type": "CFGOverride",
+  "_meta": {
+   "title": "CFG Override",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "298": {
+  "inputs": {
+   "camera_angle_x": [
+    "242",
+    0
+   ],
+   "clip_vision_model": [
+    "15",
+    0
+   ],
+   "image": [
+    "302",
+    0
+   ]
+  },
+  "class_type": "Pixal3DConditioning",
+  "_meta": {
+   "title": "Pixal3D Conditioning",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "299": {
+  "inputs": {
+   "clip_vision_model": [
+    "15",
+    0
+   ],
+   "image": [
+    "302",
+    0
+   ]
+  },
+  "class_type": "Trellis2Conditioning",
+  "_meta": {
+   "title": "Trellis2 Conditioning",
+   "cnr_id": "comfy-core",
+   "ver": "0.17.0"
+  }
+ },
+ "302": {
+  "inputs": {
+   "images": [
+    "312",
+    0
+   ]
+  },
+  "class_type": "PreviewImage",
+  "_meta": {
+   "title": "Preview Image",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "303": {
+  "inputs": {
+   "mask": [
+    "248",
+    0
+   ]
+  },
+  "class_type": "MaskPreview",
+  "_meta": {
+   "title": "Preview Mask",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "312": {
+  "inputs": {
+   "width": 1024,
+   "height": 1024,
+   "pad_factor": 1.1,
+   "grow_mask": 0,
+   "background": "#000000",
+   "images": [
+    "122",
+    0
+   ],
+   "masks": [
+    "303",
+    0
+   ]
+  },
+  "class_type": "ImageCropToMask",
+  "_meta": {
+   "title": "Crop Image to Mask",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "314": {
+  "inputs": {
+   "switch": [
+    "316",
+    0
+   ],
+   "on_false": [
+    "298",
+    0
+   ],
+   "on_true": [
+    "299",
+    0
+   ]
+  },
+  "class_type": "ComfySwitchNode",
+  "_meta": {
+   "title": "If/Else Switch",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "315": {
+  "inputs": {
+   "switch": [
+    "316",
+    0
+   ],
+   "on_false": [
+    "298",
+    1
+   ],
+   "on_true": [
+    "299",
+    1
+   ]
+  },
+  "class_type": "ComfySwitchNode",
+  "_meta": {
+   "title": "If/Else Switch",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "316": {
+  "inputs": {
+   "value": true
+  },
+  "class_type": "PrimitiveBoolean",
+  "_meta": {
+   "title": "Boolean (Switch to Trellis2)",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "318": {
+  "inputs": {
+   "switch": [
+    "316",
+    0
+   ],
+   "on_false": [
+    "319",
+    0
+   ],
+   "on_true": [
+    "40",
+    0
+   ]
+  },
+  "class_type": "ComfySwitchNode",
+  "_meta": {
+   "title": "If/Else Switch",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "319": {
+  "inputs": {
+   "unet_name": "pixal3d_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader",
+  "_meta": {
+   "title": "Load Diffusion Model",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "324": {
+  "inputs": {
+   "value": "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe"
+  },
+  "class_type": "PrimitiveString",
+  "_meta": {
+   "title": "Blender path \u2013 set once (clean Blender recommended)",
+   "cnr_id": "comfy-core"
+  }
+ },
+ "326": {
+  "inputs": {
+   "enabled": true,
+   "always_run": true,
+   "clean_vram": true,
+   "clean_ram": true,
+   "input_1": [
+    "403",
+    0
+   ]
+  },
+  "class_type": "MemoryCleaner",
+  "_meta": {
+   "title": "1 \u00b7 Free VRAM after Hi3D",
+   "aux_id": "Mstafa-awad/ComfyUI-Memory-Cleaner"
+  }
+ },
+ "333": {
+  "inputs": {
+   "mesh": [
+    "326",
+    0
+   ]
+  },
+  "class_type": "MeshToFile3D",
+  "_meta": {
+   "title": "2 \u00b7 Hi3D mesh \u2192 GLB (bake source for Bake Forger)",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "335": {
+  "inputs": {
+   "blender_path": [
+    "324",
+    0
+   ],
+   "target_tris": 12000,
+   "passes": 3,
+   "tolerance": 1.05,
+   "intermediate_ratio": 0.5,
+   "last_ratio": 0.25,
+   "final_ratio": 0.2,
+   "triangulate": true,
+   "symmetry": false,
+   "voxel_rebuild": true,
+   "relative_voxel_size": 0.0015,
+   "minimum_voxel_size": 1e-06,
+   "seal_distance": 0.0001,
+   "seal_max_steps": 100,
+   "seal_keep_trying": true,
+   "timeout_seconds": 1800,
+   "mesh": [
+    "326",
+    0
+   ]
+  },
+  "class_type": "LODTailorTheMeshTrimmer",
+  "_meta": {
+   "title": "A \u00b7 LODTailor low-poly (target_tris 12k, character)",
+   "aux_id": "Mstafa-awad/LODTailor-The-Mesh-Trimmer-ComfyuiNode"
+  }
+ },
+ "337": {
+  "inputs": {
+   "segmenter": "pec",
+   "resolution": 1536,
+   "padding": 2,
+   "weld_distance": 0.0002,
+   "mesh": [
+    "335",
+    0
+   ]
+  },
+  "class_type": "UnwrapMesh",
+  "_meta": {
+   "title": "Unwrap UVs (low-poly)",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "338": {
+  "inputs": {
+   "crease_angle": 180.0,
+   "mesh": [
+    "337",
+    0
+   ]
+  },
+  "class_type": "MeshSmoothNormals",
+  "_meta": {
+   "title": "Smooth normals",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "339": {
+  "inputs": {
+   "mesh": [
+    "338",
+    0
+   ]
+  },
+  "class_type": "MeshToFile3D",
+  "_meta": {
+   "title": "Low-poly \u2192 GLB",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "340": {
+  "inputs": {
+   "enabled": true,
+   "always_run": true,
+   "clean_vram": true,
+   "clean_ram": true,
+   "input_1": [
+    "339",
+    0
+   ],
+   "input_2": [
+    "333",
+    0
+   ]
+  },
+  "class_type": "MemoryCleaner",
+  "_meta": {
+   "title": "Free memory before baking",
+   "aux_id": "Mstafa-awad/ComfyUI-Memory-Cleaner"
+  }
+ },
+ "341": {
+  "inputs": {
+   "blender_path": [
+    "324",
+    0
+   ],
+   "prefer_gpu_baking": true,
+   "hybrid_cpu_gpu_baking": true,
+   "bake_sample_count": 1,
+   "bake_normal_detail": true,
+   "normal_map_resolution": 2048,
+   "copy_base_color_texture": false,
+   "base_color_resolution": 2048,
+   "bake_roughness_texture": false,
+   "roughness_resolution": 2048,
+   "bake_metallic_texture": false,
+   "metallic_resolution": 2048,
+   "bake_emission_texture": false,
+   "emission_resolution": 2048,
+   "bake_ao_texture": false,
+   "ao_resolution": 2048,
+   "brighter": false,
+   "auto_bake_margin": true,
+   "bake_margin_pixels": 16,
+   "bake_margin_minimum_pixels": 16,
+   "bake_margin_resolution_divisor": 256,
+   "fallback_bake_mode": "AUTO",
+   "coverage_probe_sample_count": 4096,
+   "extended_ray_sample_ratio": 0.005,
+   "fallback_minimum_recoverable_samples": 8,
+   "tight_cage_extrusion_factor": 0.0019,
+   "tight_max_ray_distance_factor": 0.029,
+   "far_cage_extrusion_factor": 0.02,
+   "far_max_ray_distance_factor": 0.092,
+   "coverage_alpha_threshold": 0.5,
+   "normal_length_tolerance": 0.35,
+   "neutral_normal_color": "0.5,0.5,1.0,1.0",
+   "material_base_color": "0.8,0.8,0.8,1.0",
+   "material_roughness": 0.9,
+   "material_metallic": 0.0,
+   "material_specular_level": 0.5,
+   "load_output_images": true,
+   "high_poly": [
+    "340",
+    1
+   ],
+   "low_poly": [
+    "340",
+    0
+   ]
+  },
+  "class_type": "LODTailorBakeForger",
+  "_meta": {
+   "title": "B \u00b7 Bake Forger (normal map only; colour + metal/rough come from UltraTex)",
+   "aux_id": "Mstafa-awad/LODTailor-Bake-Forger"
+  }
+ },
+ "342": {
+  "inputs": {
+   "merge_distance": 0.0001,
+   "centroid_merge": false,
+   "remove_degenerate": true,
+   "topology_mode": "TEXTURE_SAFE",
+   "adaptive_retry_step": true,
+   "max_attempts": 100,
+   "model": [
+    "341",
+    0
+   ]
+  },
+  "class_type": "WTiVoFastMergeByDistance",
+  "_meta": {
+   "title": "C \u00b7 Fast Merge (TEXTURE_SAFE)",
+   "aux_id": "Mstafa-awad/WTiVo-FastMergeByDistance"
+  }
+ },
+ "343": {
+  "inputs": {
+   "filename_prefix": "3d/PixelArtistry_hi3d_lowpoly",
+   "viewport_state": "",
+   "width": 1024,
+   "height": 1024,
+   "model_3d": [
+    "342",
+    0
+   ]
+  },
+  "class_type": "Save3DAdvanced",
+  "_meta": {
+   "title": "Game-ready low-poly (saved to output/3d)",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "345": {
+  "inputs": {
+   "images": [
+    "341",
+    2
+   ]
+  },
+  "class_type": "PreviewImage",
+  "_meta": {
+   "title": "Baked normal",
+   "cnr_id": "comfy-core",
+   "ver": "0.33.0"
+  }
+ },
+ "353": {
+  "inputs": {
+   "file": [
+    "383",
+    0
+   ]
+  },
+  "class_type": "UTXFileToMesh",
+  "_meta": {
+   "title": "UTX File to Mesh"
+  }
+ },
+ "354": {
+  "inputs": {
+   "unet_name": "flux-2-klein-base-9b-Q4_0.gguf"
+  },
+  "class_type": "UnetLoaderGGUF",
+  "_meta": {
+   "title": "Unet Loader (GGUF)"
+  }
+ },
+ "355": {
+  "inputs": {
+   "vae_name": "flux2-vae.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "Load VAE"
+  }
+ },
+ "356": {
+  "inputs": {
+   "clip_name": "Qwen3-8B-Q4_K_M.gguf",
+   "type": "flux2"
+  },
+  "class_type": "CLIPLoaderGGUF",
+  "_meta": {
+   "title": "CLIPLoader (GGUF)"
+  }
+ },
+ "357": {
+  "inputs": {
+   "text": "",
+   "clip": [
+    "383",
+    1
+   ]
+  },
+  "class_type": "UTXTextEncode",
+  "_meta": {
+   "title": "Empty prompt (albedo)"
+  }
+ },
+ "358": {
+  "inputs": {
+   "lora_name": "ultratex_flux2.safetensors",
+   "lora_strength": 1.0,
+   "decoder_name": "ultratex_flux2_decoder.pt",
+   "task": "albedo",
+   "view_resolution": 1024,
+   "view_count": 12,
+   "seed": 0,
+   "steps": 25,
+   "guidance": 4.0,
+   "denoise": 1.0,
+   "sparse_retention": 0.2,
+   "extra_angle_mode": "guided",
+   "extra_denoise": 0.55,
+   "extra_steps": 25,
+   "tiled_decode": true,
+   "source": [
+    "375",
+    0
+   ],
+   "model": [
+    "354",
+    0
+   ],
+   "vae": [
+    "355",
+    0
+   ],
+   "positive": [
+    "357",
+    0
+   ],
+   "negative": [
+    "376",
+    0
+   ]
+  },
+  "class_type": "UTXGenerateTextureViewsV23",
+  "_meta": {
+   "title": "Generate \u00b7 Albedo (resolution + views HERE)"
+  }
+ },
+ "359": {
+  "inputs": {
+   "images": [
+    "358",
+    2
+   ]
+  },
+  "class_type": "PreviewImage",
+  "_meta": {
+   "title": "All generated views"
+  }
+ },
+ "361": {
+  "inputs": {
+   "filename_prefix": "ultratex/hi3d_ultratex_only",
+   "image": "",
+   "mesh": [
+    "377",
+    0
+   ]
+  },
+  "class_type": "SaveGLB",
+  "_meta": {
+   "title": "Save 3D Model"
+  }
+ },
+ "362": {
+  "inputs": {
+   "filename_prefix": "ultratex/hi3d_base_color",
+   "images": [
+    "377",
+    2
+   ]
+  },
+  "class_type": "SaveImage",
+  "_meta": {
+   "title": "Save Image"
+  }
+ },
+ "364": {
+  "inputs": {
+   "lora_name": "ultratex_flux2_mr.safetensors",
+   "lora_strength": 1.0,
+   "decoder_name": "ultratex_flux2_decoder.pt",
+   "task": "mr",
+   "view_resolution": 1024,
+   "view_count": 6,
+   "seed": 0,
+   "steps": 4,
+   "guidance": 4.0,
+   "denoise": 1.0,
+   "sparse_retention": 0.2,
+   "extra_angle_mode": "independent",
+   "extra_denoise": 0.55,
+   "extra_steps": 4,
+   "tiled_decode": true,
+   "source": [
+    "375",
+    0
+   ],
+   "model": [
+    "354",
+    0
+   ],
+   "vae": [
+    "355",
+    0
+   ],
+   "positive": [
+    "357",
+    0
+   ],
+   "negative": [
+    "376",
+    0
+   ]
+  },
+  "class_type": "UTXGenerateTextureViewsV23",
+  "_meta": {
+   "title": "Generate \u00b7 Metallic-Roughness (6 views)"
+  }
+ },
+ "365": {
+  "inputs": {
+   "images": [
+    "364",
+    2
+   ]
+  },
+  "class_type": "PreviewImage",
+  "_meta": {
+   "title": "MR generated views"
+  }
+ },
+ "366": {
+  "inputs": {
+   "filename_prefix": "ultratex/hi3d_roughness",
+   "images": [
+    "377",
+    3
+   ]
+  },
+  "class_type": "SaveImage",
+  "_meta": {
+   "title": "Save roughness map"
+  }
+ },
+ "367": {
+  "inputs": {
+   "filename_prefix": "ultratex/hi3d_metallic",
+   "images": [
+    "377",
+    4
+   ]
+  },
+  "class_type": "SaveImage",
+  "_meta": {
+   "title": "Save metallic map"
+  }
+ },
+ "368": {
+  "inputs": {
+   "bg_removal_name": "birefnet.safetensors"
+  },
+  "class_type": "LoadBackgroundRemovalModel",
+  "_meta": {
+   "title": "Load Background Removal Model"
+  }
+ },
+ "369": {
+  "inputs": {
+   "bg_removal_model": [
+    "368",
+    0
+   ],
+   "image": [
+    "122",
+    0
+   ]
+  },
+  "class_type": "RemoveBackground",
+  "_meta": {
+   "title": "Remove Background"
+  }
+ },
+ "370": {
+  "inputs": {
+   "images": [
+    "375",
+    2
+   ]
+  },
+  "class_type": "PreviewImage",
+  "_meta": {
+   "title": "Actual 6 RGB normal views (preview)"
+  }
+ },
+ "371": {
+  "inputs": {
+   "images": [
+    "375",
+    3
+   ]
+  },
+  "class_type": "PreviewImage",
+  "_meta": {
+   "title": "Aligned colored reference (preview)"
+  }
+ },
+ "372": {
+  "inputs": {
+   "mask": [
+    "375",
+    4
+   ]
+  },
+  "class_type": "MaskToImage",
+  "_meta": {
+   "title": "Convert Mask to Image"
+  }
+ },
+ "373": {
+  "inputs": {
+   "images": [
+    "372",
+    0
+   ]
+  },
+  "class_type": "PreviewImage",
+  "_meta": {
+   "title": "Aligned foreground mask (preview)"
+  }
+ },
+ "374": {
+  "inputs": {
+   "atlas_size": 2048,
+   "uv_mode": "keep_existing",
+   "padding": 16,
+   "mesh": [
+    "353",
+    0
+   ]
+  },
+  "class_type": "UTXUnwrapMeshUVV25",
+  "_meta": {
+   "title": "UV: keep 04's UVs (keep_existing)"
+  }
+ },
+ "375": {
+  "inputs": {
+   "alignment": "front",
+   "mask_polarity": "foreground",
+   "normal_mode": "auto_smooth",
+   "normal_view_resolution": 1024,
+   "camera_fit": "native_mesh_fit",
+   "image_margin_percent": 0.0,
+   "image_padding_pixels": 0,
+   "reference_zoom": 1.0,
+   "mesh": [
+    "374",
+    0
+   ],
+   "reference": [
+    "122",
+    0
+   ],
+   "mask": [
+    "369",
+    0
+   ],
+   "runtime": [
+    "387",
+    0
+   ]
+  },
+  "class_type": "UTXPrepareTextureV25",
+  "_meta": {
+   "title": "Prepare mesh + reference"
+  }
+ },
+ "376": {
+  "inputs": {
+   "text": "",
+   "clip": [
+    "383",
+    1
+   ]
+  },
+  "class_type": "UTXTextEncode",
+  "_meta": {
+   "title": "Empty prompt (MR)"
+  }
+ },
+ "377": {
+  "inputs": {
+   "texture_size": 2048,
+   "completion": "surface_fill",
+   "upscale_mode": "sharp_anchor_v2",
+   "device": "auto",
+   "albedo_setup": [
+    "358",
+    3
+   ],
+   "albedo_views": [
+    "358",
+    0
+   ],
+   "mr_setup": [
+    "364",
+    3
+   ],
+   "mr_views": [
+    "364",
+    0
+   ]
+  },
+  "class_type": "UTXFastSurfaceTextureBaker",
+  "_meta": {
+   "title": "3. Fast Surface Texture Baker (UltraTex 2.2, sharp_anchor_v2)"
+  }
+ },
+ "378": {
+  "inputs": {
+   "viewport_state": "",
+   "width": 1024,
+   "height": 1024,
+   "model_3d": [
+    "377",
+    1
+   ]
+  },
+  "class_type": "Preview3DAdvanced",
+  "_meta": {
+   "title": "Preview 3D (Advanced)",
+   "cnr_id": "comfy-core",
+   "ver": "0.38.0"
+  }
+ },
+ "383": {
+  "inputs": {
+   "enabled": true,
+   "always_run": true,
+   "clean_vram": true,
+   "clean_ram": true,
+   "input_1": [
+    "342",
+    0
+   ],
+   "input_2": [
+    "356",
+    0
+   ]
+  },
+  "class_type": "MemoryCleaner",
+  "_meta": {
+   "title": "Free VRAM before UltraTex (text encoder loads after this)"
+  }
+ },
+ "384": {
+  "inputs": {
+   "normal_convention": "OpenGL",
+   "alpha_mode": "inherit",
+   "alpha_cutoff": 0.5,
+   "uv_convention": "v_down",
+   "mesh": [
+    "353",
+    0
+   ],
+   "base_color": [
+    "377",
+    2
+   ],
+   "roughness": [
+    "377",
+    3
+   ],
+   "metallic": [
+    "377",
+    4
+   ]
+  },
+  "class_type": "UTXApplyMaterials",
+  "_meta": {
+   "title": "Merge: UltraTex color/MR + Bake Forger normal/AO/emission"
+  }
+ },
+ "385": {
+  "inputs": {
+   "mesh": [
+    "384",
+    0
+   ]
+  },
+  "class_type": "UTXCreate3DFile",
+  "_meta": {
+   "title": "Final mesh \u2192 GLB"
+  }
+ },
+ "386": {
+  "inputs": {
+   "filename_prefix": "3d/PixelArtistry_hi3d_final",
+   "viewport_state": "",
+   "width": 1024,
+   "height": 1024,
+   "model_3d": [
+    "388",
+    0
+   ]
+  },
+  "class_type": "Save3DAdvanced",
+  "_meta": {
+   "title": "FINAL game character (saved to output/3d)"
+  }
+ },
+ "387": {
+  "inputs": {
+   "spill_directory": "",
+   "ram_cache_mb": 256,
+   "disk_budget_gb": 16.0,
+   "system_headroom_mb": 2048,
+   "gpu_headroom_mb": 768,
+   "token_chunk": 4096,
+   "activation_factor": 12.0,
+   "atlas_tile": 512,
+   "decode_tile": 64,
+   "performance_mode": "adaptive",
+   "max_vram_mb": 0,
+   "adaptive_diagnostics": false
+  },
+  "class_type": "UTXConfigureRuntime",
+  "_meta": {
+   "title": "UltraTex scratch folder (blank = output/.ultratex_cache, emptied by the Cache Cleaner after each run)"
+  }
+ },
+ "388": {
+  "inputs": {
+   "mode": "delete_when_executed",
+   "confirm_delete_on_run": true,
+   "Scan Size": "Scan Size",
+   "Delete Now": "Delete Now",
+   "passthrough": [
+    "385",
+    0
+   ]
+  },
+  "class_type": "UTXCacheCleaner",
+  "_meta": {
+   "title": "UTX 4 \u00b7 Cache Cleaner (empties output/.ultratex_cache after the run)"
+  }
+ },
+ "389": {
+  "inputs": {
+   "bg_removal_name": "birefnet.safetensors"
+  },
+  "class_type": "LoadBackgroundRemovalModel",
+  "_meta": {
+   "title": "Load Background Removal Model"
+  }
+ },
+ "390": {
+  "inputs": {
+   "bg_removal_model": [
+    "389",
+    0
+   ],
+   "image": [
+    "122",
+    0
+   ]
+  },
+  "class_type": "RemoveBackground",
+  "_meta": {
+   "title": "Remove Background"
+  }
+ },
+ "391": {
+  "inputs": {
+   "width": 1024,
+   "height": 1024,
+   "pad_factor": 1.2,
+   "grow_mask": 0,
+   "background": "#ffffff",
+   "images": [
+    "122",
+    0
+   ],
+   "masks": [
+    "390",
+    0
+   ]
+  },
+  "class_type": "ImageCropToMask",
+  "_meta": {
+   "title": "Crop Image to Mask"
+  }
+ },
+ "392": {
+  "inputs": {
+   "ckpt_name": "hi3d_v1_int8.safetensors"
+  },
+  "class_type": "Hi3DCheckpointLoader",
+  "_meta": {
+   "title": "Load Hi3D Checkpoint"
+  }
+ },
+ "393": {
+  "inputs": {
+   "clip_name": "dinov2-large.safetensors"
+  },
+  "class_type": "CLIPVisionLoader",
+  "_meta": {
+   "title": "Load DINOv2"
+  }
+ },
+ "394": {
+  "inputs": {
+   "clip_name": "clip-vit-large-patch14.safetensors"
+  },
+  "class_type": "CLIPVisionLoader",
+  "_meta": {
+   "title": "Load CLIP ViT-L/14"
+  }
+ },
+ "395": {
+  "inputs": {
+   "dino_vision": [
+    "393",
+    0
+   ],
+   "clip_vision": [
+    "394",
+    0
+   ],
+   "image": [
+    "391",
+    0
+   ]
+  },
+  "class_type": "Hi3DConditioning",
+  "_meta": {
+   "title": "Hi3D Conditioning"
+  }
+ },
+ "396": {
+  "inputs": {
+   "resolution": 1024,
+   "sign_mode": "solid",
+   "sign_mode.fill": 20.0,
+   "sign_mode.qef": false,
+   "band": 1.0,
+   "project_back": 0.0,
+   "fix_poles": false,
+   "smooth_iters": 0,
+   "drop_small_components": 0.01,
+   "precluster_max_verts": 20000000,
+   "mesh": [
+    "408",
+    0
+   ]
+  },
+  "class_type": "RemeshMesh",
+  "_meta": {
+   "title": "Remesh 1/2 (solid, fill 20)"
+  }
+ },
+ "397": {
+  "inputs": {
+   "resolution": 1024,
+   "sign_mode": "solid",
+   "sign_mode.fill": 20.0,
+   "sign_mode.qef": false,
+   "band": 1.0,
+   "project_back": 0.0,
+   "fix_poles": false,
+   "smooth_iters": 0,
+   "drop_small_components": 0.01,
+   "precluster_max_verts": 20000000,
+   "mesh": [
+    "396",
+    0
+   ]
+  },
+  "class_type": "RemeshMesh",
+  "_meta": {
+   "title": "Remesh 2/2 (solid, fill 20)"
+  }
+ },
+ "398": {
+  "inputs": {
+   "resolution": "512",
+   "positive": [
+    "395",
+    0
+   ],
+   "negative": [
+    "395",
+    1
+   ],
+   "mesh": [
+    "397",
+    0
+   ]
+  },
+  "class_type": "Hi3DRefineStage",
+  "_meta": {
+   "title": "Hi3D 512"
+  }
+ },
+ "399": {
+  "inputs": {
+   "seed": 42,
+   "steps": 25,
+   "model": [
+    "392",
+    0
+   ],
+   "positive": [
+    "398",
+    0
+   ],
+   "negative": [
+    "398",
+    1
+   ],
+   "latent": [
+    "398",
+    2
+   ]
+  },
+  "class_type": "Hi3DSampler",
+  "_meta": {
+   "title": "Hi3D Sampler"
+  }
+ },
+ "400": {
+  "inputs": {
+   "samples": [
+    "399",
+    0
+   ],
+   "vae": [
+    "392",
+    1
+   ]
+  },
+  "class_type": "VAEDecodeHi3D",
+  "_meta": {
+   "title": "Hi3D VAE Decode"
+  }
+ },
+ "401": {
+  "inputs": {
+   "resolution": "1024",
+   "positive": [
+    "395",
+    0
+   ],
+   "negative": [
+    "395",
+    1
+   ],
+   "mesh": [
+    "400",
+    0
+   ]
+  },
+  "class_type": "Hi3DRefineStage",
+  "_meta": {
+   "title": "Hi3D 1024"
+  }
+ },
+ "402": {
+  "inputs": {
+   "seed": 42,
+   "steps": 25,
+   "model": [
+    "392",
+    0
+   ],
+   "positive": [
+    "401",
+    0
+   ],
+   "negative": [
+    "401",
+    1
+   ],
+   "latent": [
+    "401",
+    2
+   ]
+  },
+  "class_type": "Hi3DSampler",
+  "_meta": {
+   "title": "Hi3D Sampler"
+  }
+ },
+ "403": {
+  "inputs": {
+   "samples": [
+    "402",
+    0
+   ],
+   "vae": [
+    "392",
+    1
+   ]
+  },
+  "class_type": "VAEDecodeHi3D",
+  "_meta": {
+   "title": "Hi3D VAE Decode"
+  }
+ },
+ "407": {
+  "inputs": {
+   "filename_prefix": "3d/PixelArtistry_hi3d_detail_1024",
+   "image": "",
+   "mesh": [
+    "403",
+    0
+   ]
+  },
+  "class_type": "SaveGLB",
+  "_meta": {
+   "title": "Save Hi3D 1024 (detail mesh)"
+  }
+ },
+ "408": {
+  "inputs": {
+   "enabled": true,
+   "always_run": true,
+   "clean_vram": true,
+   "clean_ram": true,
+   "input_1": [
+    "92",
+    0
+   ]
+  },
+  "class_type": "MemoryCleaner",
+  "_meta": {
+   "title": "0 \u00b7 Free VRAM after TRELLIS.2",
+   "aux_id": "Mstafa-awad/ComfyUI-Memory-Cleaner"
+  }
+ }
+}
