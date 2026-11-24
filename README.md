@@ -1,6 +1,6 @@
 <div align="center">
 
-# Hi3D Print Studio
+<img src="docs/logo/Hi3D_Print_Studio_Banner.png" alt="Hi3D Print Studio" width="800">
 
 **One picture in. A detailed, multi-colour 3D print out.**
 
