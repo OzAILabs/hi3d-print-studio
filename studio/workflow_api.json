@@ -1465,7 +1465,11 @@
    "print_faces": 1000000,
    "min_island_mm2": 8.0,
    "slice_check": true,
-   "filename_prefix": "studio/JOB/print"
+   "filename_prefix": "studio/JOB/print",
+   "picture": [
+    "312",
+    0
+   ]
   }
  },
  "902": {

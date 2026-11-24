@@ -55,11 +55,15 @@ class Hi3DColourPrint3MF:
                                              "tooltip": "Colour specks smaller than this are merged."}),
                 "slice_check": ("BOOLEAN", {"default": True}),
                 "filename_prefix": ("STRING", {"default": "print/hi3d_colour"}),
-            }
+            },
+            "optional": {
+                "picture": ("IMAGE", {"tooltip": "The cut-out input picture (on black). Filament colours are "
+                                                 "taken from the paint colours it uses; without it, from the model."}),
+            },
         }
 
     def make(self, mesh, painted_model, height_mm, colours, printer, print_faces, min_island_mm2,
-             slice_check, filename_prefix):
+             slice_check, filename_prefix, picture=None):
         max_h = threemf.PRINTERS[printer][3]
         if height_mm > max_h:
             raise ValueError(f"{height_mm:g} mm is taller than the {printer}'s {max_h:g} mm build height.")
@@ -70,8 +74,11 @@ class Hi3DColourPrint3MF:
         s = colour_print.Settings(height_mm=height_mm, colours=colours, printer=printer,
                                   print_faces=print_faces, min_island_mm2=min_island_mm2,
                                   slice_check=slice_check)
+        pic = None
+        if picture is not None:
+            pic = (picture[0].detach().cpu().numpy()[..., :3] * 255.0).clip(0, 255).astype(np.uint8)
         with tempfile.TemporaryDirectory(prefix="hi3d_cp_") as tmp:
-            res = colour_print.run(v, f, _glb_path(painted_model, Path(tmp)), full, stem, s)
+            res = colour_print.run(v, f, _glb_path(painted_model, Path(tmp)), full, stem, s, picture=pic)
         report = json.dumps(res.report, indent=1, default=str)
         Path(full, f"{stem}_report.json").write_text(report, encoding="utf-8")
         return {"ui": {"text": [report]}, "result": (res.project or "", report)}

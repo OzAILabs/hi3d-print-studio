@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---------------------------------------------------------------------------
-This licence covers the code in this repository only. Hi3D Studio downloads
+This licence covers the code in this repository only. Hi3D Print Studio downloads
 and runs third-party software and models under their own licences; see the
 "Credits and licences" section of README.md. In particular, the UltraTex
 painting step runs FLUX.2 Klein base 9B, which is licensed for

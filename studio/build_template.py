@@ -16,7 +16,8 @@ p["900"] = {"class_type": "WTiVoNativeMeshToMesh", "inputs": {
 p["901"] = {"class_type": "Hi3DColourPrint3MF", "inputs": {
     "mesh": ["900", 0], "painted_model": ["385", 0], "height_mm": 100.0, "colours": 4,
     "printer": "A1 mini 0.4", "print_faces": 1_000_000, "min_island_mm2": 8.0, "slice_check": True,
-    "filename_prefix": "studio/JOB/print"}}
+    "filename_prefix": "studio/JOB/print",
+    "picture": ["312", 0]}}     # the cut-out picture (on black): filament colours come from its paint colours
 p["902"] = {"class_type": "SaveGLB", "inputs": {"mesh": ["92", 0], "filename_prefix": "studio/JOB/coarse"}}
 
 # Painting mesh: our simplification of the Hi3D mesh instead of Blender's LODTailor low-poly +

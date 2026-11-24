@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hi3D Studio - one-shot setup on Windows (run from Git Bash, or double-click Setup.bat).
+# Hi3D Print Studio - one-shot setup on Windows (run from Git Bash, or double-click Setup.bat).
 #
 # Builds everything into this folder (nothing goes to C: except what Windows itself needs):
 #   ComfyUI_py312\   ComfyUI v0.46.0 on embedded Python 3.12.10 + PyTorch 2.8.0 / CUDA 12.8
@@ -173,4 +173,4 @@ k[(1,)](x, o, 1024, B=1024)
 print("Triton kernel OK:", bool(torch.allclose(o, x * 2)))
 PYEOF
 echo
-echo "Done. Start the studio with 'Start Hi3D Studio.bat'."
+echo "Done. Start the studio with 'Start Hi3D Print Studio.bat'."

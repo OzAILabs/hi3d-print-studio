@@ -1,4 +1,4 @@
-"""Hi3D Studio: a clean web front end for picture -> detailed 3D -> colour print.
+"""Hi3D Print Studio: a clean web front end for picture -> detailed 3D -> colour print.
 
 Runs the second ComfyUI (Python 3.12 / torch 2.8, port 8189) hidden in the background
 and drives the PixelArtistry Hi3D workflow (plus WTiVo seal and the Colour Print node)
@@ -38,7 +38,7 @@ JOBS = HERE / "jobs"
 STATIC = HERE / "static"
 BAMBU = Path(r"C:\Program Files\Bambu Studio\bambu-studio.exe")
 PORT = int(os.environ.get("HI3D_STUDIO_PORT", "7870"))
-CLIENT_ID = "hi3d-studio-" + uuid.uuid4().hex[:8]
+CLIENT_ID = "hi3d-print-studio-" + uuid.uuid4().hex[:8]
 TEMPLATE = json.loads((HERE / "workflow_api.json").read_text())
 SEED_INPUTS = {"3": "seed", "18": "seed", "23": "seed", "399": "seed", "402": "seed"}
 
@@ -822,7 +822,7 @@ def main():
     ])
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
-    log(f"Hi3D Studio on http://127.0.0.1:{PORT}")
+    log(f"Hi3D Print Studio on http://127.0.0.1:{PORT}")
     web.run_app(app, host="127.0.0.1", port=PORT, print=None)
 
 

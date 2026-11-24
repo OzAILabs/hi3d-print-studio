@@ -1,6 +1,6 @@
 <div align="center">
 
-# Hi3D Studio
+# Hi3D Print Studio
 
 **One picture in. A detailed, multi-colour 3D print out.**
 
@@ -8,7 +8,7 @@ A local web app for Windows that turns a single image into a watertight, filamen
 Bambu Studio project — shape, fine detail, painting, sealing, colour reduction and a slice
 check, with live previews and checkpoints so you never wait 30 minutes for a bad result.
 
-![Hi3D Studio: picture, painted 3D model and the colours it prints with](docs/images/hero.jpg)
+![Hi3D Print Studio: picture, painted 3D model and the colours it prints with](docs/images/hero.jpg)
 
 </div>
 
@@ -24,15 +24,15 @@ All three were made with the default settings: 100 mm tall, 4 colours, Bambu Lab
 
 | | Frog Knight | Orc Warlord | Dragon |
 |---|---|---|---|
-| Picture → print file | 14.8 min | 17.0 min | ~25 min (both checkpoints) |
-| Print time (Bambu slice check) | 21.0 h | 25.9 h | 38.8 h |
-| Colour changes | 640 | 828 | 1,299 |
-| Filament (in the model) | 289 g (55 g) | 242 g (79 g) | 344 g (56 g) |
+| Picture → print file | 14.8 min | 18 min | ~25 min (both checkpoints) |
+| Print time (Bambu slice check) | 21.0 h | 24.3 h | 38.8 h |
+| Colour changes | 640 | 763 | 1,299 |
+| Filament (in the model) | 289 g (55 g) | 242 g (75 g) | 344 g (56 g) |
 
 The frog and the orc were generated with the prompts in [docs/PROMPTS.md](docs/PROMPTS.md);
 the dragon is a hand-painted picture. Flat colours print much faster than painted shading.
 
-![The Hi3D Studio web app](docs/images/studio.jpg)
+![The Hi3D Print Studio web app](docs/images/studio.jpg)
 
 ## Features
 
@@ -62,7 +62,7 @@ the dragon is a hand-painted picture. Flat colours print much faster than painte
 ## Install
 
 ```powershell
-git clone https://github.com/OzAILabs/hi3d-studio
+git clone https://github.com/OzAILabs/hi3d-print-studio
 ```
 
 Then double-click **`Setup.bat`**. It builds everything inside the repo folder and asks nothing:
@@ -79,14 +79,20 @@ It ends with a GPU self-test. Expect 30–60 minutes, mostly downloads. Safe to 
 
 ## Use
 
-1. Double-click **`Start Hi3D Studio.bat`** — the page opens at http://127.0.0.1:7870.
+1. Double-click **`Start Hi3D Print Studio.bat`** — the page opens at http://127.0.0.1:7870.
 2. Drop a picture, pick height, filament colours, colour quality (Best = 25 steps, Fast = 4) and
    whether to stop at the checkpoints. Click **Make it**.
 3. Watch the stages, previews and 3D models. At a checkpoint, spin the model and decide.
 4. When it's done: **Open in Bambu Studio**, turn on supports if it says so, print.
 
-The picture matters most — see **[Pictures that print well](docs/PROMPTS.md)** for the rules and
-two ready-made prompts for an image generator (the frog and the orc above).
+The picture matters most. **[Prompts that print well](docs/PROMPTS.md)** has a modular prompt
+template for any image generator: fixed blocks that keep a picture printable, and slots you
+replace with your own subject, pose, colours, base and material. It includes the full frog and
+orc prompts from the gallery, slot swaps for a robot, a baby dragon, a wizard gnome, a mimic chest
+and a space cat, and a list of what usually goes wrong.
+
+The filament colours are taken from the paint colours in your picture (when it has clear flat
+colours, as these prompts ask for), so ask for exactly as many colours as you have filaments.
 
 ## How it works
 
@@ -123,7 +129,7 @@ print step is a ComfyUI node in `comfyui_nodes/Hi3D-ColourPrint/`.
 
 ## Credits and licences
 
-The code in this repository is MIT-licensed. Hi3D Studio downloads and runs:
+The code in this repository is MIT-licensed. Hi3D Print Studio downloads and runs:
 
 - **Hi3D v1.0** (OCEANO HK HOLDING LIMITED) via **AeroX's** native ComfyUI nodes and int8 weights — Hi3D Open License Agreement v1.0.
 - **PixelArtistry** workflows and installers (MIT) — the Hi3D chain, remesh settings and pack setup this builds on.

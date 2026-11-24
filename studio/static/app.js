@@ -1,4 +1,4 @@
-// Hi3D Studio front end: live job state over Server-Sent Events, no framework.
+// Hi3D Print Studio front end: live job state over Server-Sent Events, no framework.
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const state = { jobs: {}, sel: null, tab: "live", model: null, autoTab: true, file: null };

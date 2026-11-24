@@ -369,12 +369,110 @@ def absorb_islands(labels, adjacency, area, min_area, passes=6):
     return labels, absorbed
 
 
-def reduce_colours(mesh, face_rgb, s: Settings, report):
+SHADE_W = np.array([0.5, 1.0, 1.0])
+"""Colour distance for choosing filaments: lightness counts half. Shading (lit vs shadowed
+red) is mostly a lightness change; a different paint colour differs in hue/chroma."""
+SAME_COLOUR = 15.0
+"""Colours closer than this (in SHADE_W-weighted Lab) are shades of one paint colour."""
+
+
+def _shade_dist(a, b):
+    return np.sqrt((((a[:, None] - b[None]) * SHADE_W) ** 2).sum(-1))
+
+
+def _linear_chroma(lab_colour):
+    """Colour mix (r, g, b shares in linear light): shading scales brightness, not the mix."""
+    c = lab_to_srgb(lab_colour[None])[0] / 255.0
+    lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    return lin / (lin.sum() + 1e-6)
+
+
+def _paint_families(px, k, seed, fine=16, same_mix=3.0):
+    """Group the picture's colours into paint families. Returns (members, family, reps, sizes).
+
+    Fine clusters -> merge shades (average linkage under SAME_COLOUR in lightness-halved
+    Lab) -> merge coloured families with the same colour mix (the same paint in shadow:
+    lit red and shadowed red differ 3x in brightness but under 1 point in mix; ivory and
+    olive differ by 8). The k largest families are the paints.
+    """
+    from scipy.cluster.hierarchy import fcluster, linkage
+
+    if len(px) > 300_000:
+        px = px[np.random.default_rng(seed).choice(len(px), 300_000, replace=False)]
+    lab = srgb_to_lab(px)
+    centres = kmeans_lab(lab * SHADE_W, np.full(len(lab), 1.0 / len(lab)), fine, seed) / SHADE_W
+    lbl = np.argmin(_shade_dist(lab, centres), 1)
+    share = np.bincount(lbl, minlength=fine) / len(lbl)
+    alive = share > 0.002                                    # ignore stray edge pixels
+    med = np.array([np.median(lab[lbl == j], 0) for j in range(fine) if alive[j]])
+    share = share[alive]
+    fam = fcluster(linkage(med * SHADE_W, method="average"), t=SAME_COLOUR, criterion="distance")
+    groups = [[np.flatnonzero(fam == f)] for f in np.unique(fam)]
+    for g in groups:
+        g.append(float(share[g[0]].sum()))
+        g.append(med[g[0]][np.argmax(share[g[0]])])          # its most common member names the paint
+    merged = True
+    while merged:
+        merged = False
+        for i in range(len(groups)):
+            for j in range(i + 1, len(groups)):
+                ci, cj = _linear_chroma(groups[i][2]), _linear_chroma(groups[j][2])
+                coloured = min(np.linalg.norm(ci - 1 / 3), np.linalg.norm(cj - 1 / 3)) >= 0.04
+                if coloured and 100 * np.linalg.norm(ci - cj) < same_mix:
+                    big, small = (i, j) if groups[i][1] >= groups[j][1] else (j, i)
+                    groups[big][0] = np.r_[groups[big][0], groups[small][0]]
+                    groups[big][1] += groups[small][1]
+                    groups.pop(small)
+                    merged = True
+                    break
+            if merged:
+                break
+    groups.sort(key=lambda g: -g[1])
+    groups = groups[:k]
+    members = np.concatenate([med[g[0]] for g in groups])
+    family = np.concatenate([np.full(len(g[0]), i) for i, g in enumerate(groups)])
+    return members, family, np.array([g[2] for g in groups]), [g[1] for g in groups]
+
+
+def picture_palette(picture_rgb, k, seed=0, agree=12.0):
+    """The paint colours the input picture uses, or None when it has no clear ones.
+
+    Returns (member colours in Lab, family index per member): a surface colour belongs to
+    the family of its nearest member, so shadowed red still lands on red. The grouping is
+    run three times from different random starts; only when all three find the same paints
+    (a flat-coloured figurine picture) is the result used. On shaded art (a painting) they
+    disagree, and the caller falls back to grouping the model's own surface colours.
+    """
+    px = np.asarray(picture_rgb).reshape(-1, 3)
+    px = px[px.astype(int).sum(1) > 15]                      # the cut-out sits on pure black
+    if len(px) < 2000:
+        return None
+    runs = [_paint_families(px, k, seed + i) for i in range(3)]
+    reps = runs[0][2]
+    for other in runs[1:]:
+        if len(other[2]) != len(reps):
+            return None
+        d = _shade_dist(reps, other[2])
+        if len(set(d.argmin(1))) != len(reps) or d.min(1).max() > agree:
+            return None
+    return runs[0][0], runs[0][1]
+
+
+def reduce_colours(mesh, face_rgb, s: Settings, report, picture=None):
     lab = srgb_to_lab(face_rgb)
     area = np.asarray(mesh.area_faces)
-    w = np.array([1.0, s.chroma_weight, s.chroma_weight])
-    centres = kmeans_lab(lab * w, area, s.colours, s.seed)
-    labels = _nearest(lab * w, centres)
+    paints = picture_palette(picture, s.colours, s.seed) if picture is not None else None
+    if paints is not None:
+        members, family = paints
+        labels = np.empty(len(lab), dtype=np.int64)
+        for i in range(0, len(lab), 200_000):                # nearest member -> its paint family
+            labels[i:i + 200_000] = family[np.argmin(_shade_dist(lab[i:i + 200_000], members), 1)]
+        report["palette_source"] = "picture"
+    else:
+        w = np.array([1.0, s.chroma_weight, s.chroma_weight])
+        centres = kmeans_lab(lab * w, area, s.colours, s.seed)
+        labels = _nearest(lab * w, centres)
+        report["palette_source"] = "model surface"
     adjacency = np.asarray(mesh.face_adjacency)
     labels = majority_smooth(labels, adjacency, s.colours, s.smoothing_rounds)
     labels, absorbed = absorb_islands(labels, adjacency, area, s.min_island_mm2)
@@ -385,7 +483,9 @@ def reduce_colours(mesh, face_rgb, s: Settings, report):
     rank = np.full(s.colours, -1)
     rank[order] = np.arange(len(order))
     labels = rank[labels]
-    means = np.array([np.average(lab[labels == j], axis=0, weights=area[labels == j]) for j in range(len(order))])
+    # Filament shade = the typical (median) surface colour it covers; the picture decides
+    # which colours, but its own lighting makes it read darker than the painted model.
+    means = np.array([np.median(lab[labels == j], axis=0) for j in range(len(order))])
     palette = lab_to_srgb(means)
     share = share[order] / share.sum()
     report["islands_absorbed"] = absorbed
@@ -395,7 +495,7 @@ def reduce_colours(mesh, face_rgb, s: Settings, report):
 
 
 # --------------------------------------------------------------------- whole step
-def run(vertices, faces, painted_glb, out_dir, name, s: Settings) -> Result:
+def run(vertices, faces, painted_glb, out_dir, name, s: Settings, picture=None) -> Result:
     import trimesh
 
     t0 = time.time()
@@ -409,7 +509,7 @@ def run(vertices, faces, painted_glb, out_dir, name, s: Settings) -> Result:
     painted = trimesh.load(painted_glb, force="mesh")
     face_rgb = transfer_colours(mesh, painted, s, rep)
     log(f"reducing to {s.colours} filament colours")
-    labels, palette = reduce_colours(mesh, face_rgb, s, rep)
+    labels, palette = reduce_colours(mesh, face_rgb, s, rep, picture)
     tower = place_on_plate(mesh)
     res.palette = to_hex(palette)
     painted_3mf = out_dir / f"{name}_painted.3mf"
@@ -432,7 +532,8 @@ def run(vertices, faces, painted_glb, out_dir, name, s: Settings) -> Result:
 
 def summarise(proj, palette_hex, rep):
     """The few numbers a person wants from the slice check."""
-    out = {"sliced": False, "palette": palette_hex, "size_mm": rep.get("size_mm")}
+    out = {"sliced": False, "palette": palette_hex, "size_mm": rep.get("size_mm"),
+           "palette_source": rep.get("palette_source")}
     result = proj.get("bambu_result") or {}
     out["message"] = result.get("error_string")
     plates = result.get("sliced_plates") or []
