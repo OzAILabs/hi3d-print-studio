@@ -166,6 +166,23 @@ function render() {
   err.textContent = job.error ? `Stopped: ${job.error}` : "";
 }
 
+// The shape model's name, for jobs made before the studio labelled Pixal3D runs correctly.
+function shapeName(job, text) {
+  return (job.params || {}).shape_model === "pixal3d" ? String(text).replace("TRELLIS.2", "Pixal3D") : text;
+}
+
+// How deep the shape came out (measured by the studio when the shape model is ready).
+function slabText(job) {
+  const c = job.shape_check;
+  if (!c || c.level === "ok") return null;
+  const pct = Math.round(c.depth * 100);
+  const pixal = (job.params || {}).shape_model === "pixal3d";
+  const fix = pixal ? "Try another for a new seed." : "Try another for a new seed, or start again with Pixal3D, which handles flat cartoons better.";
+  return c.level === "flat"
+    ? { cls: "flat", text: `This shape looks like a flat slab: it is only ${pct}% as deep as it is wide, so it would print like a cardboard cut-out. ${fix}` }
+    : { cls: "", text: `This shape is shallow: ${pct}% as deep as it is wide. Turn it sideways to check. ${fix}` };
+}
+
 function renderGate(job) {
   const box = $("#gate");
   const g = job.status === "paused" && GATE_TEXT[job.gate];
@@ -174,6 +191,9 @@ function renderGate(job) {
   const [title, body, model] = g;
   $("#gateTitle").textContent = title + (job.tries > 1 ? ` · try ${job.tries}` : "");
   $("#gateBody").textContent = body;
+  const slab = job.gate === "shape" ? slabText(job) : null;
+  $("#gateWarn").hidden = !slab;
+  if (slab) { $("#gateWarn").className = `gateWarn ${slab.cls}`; $("#gateWarn").textContent = slab.text; }
   const key = `${job.id}:${job.gate}:${job.tries || 1}`;
   if (state.gateShown !== key) {            // first time at this checkpoint: show its model
     state.gateShown = key;
@@ -197,7 +217,7 @@ function renderStages(job) {
     const step = s.state === "running" && s.step ? ` · step ${s.step}` : "";
     return `<li class="stage ${s.state}">
       <span class="ico">${icon}</span>
-      <div><div class="nm">${s.title}</div><div class="ds">${s.description}${step}</div></div>
+      <div><div class="nm">${s.title}</div><div class="ds">${shapeName(job, s.description)}${step}</div></div>
       <span class="tm">${time}</span>
       <div class="sb"><div style="width:${Math.round((s.fraction || 0) * 100)}%"></div></div>
     </li>`;
@@ -234,12 +254,17 @@ function renderModels(job) {
   if (state.autoTab && keys.length > (state._modelCount ?? 0) && state._modelCount !== undefined) setTab("model");
   state._modelCount = keys.length;
   $("#modelEmpty").hidden = keys.length > 0;
+  // warn under the 3D view while the shape is shown (the checkpoint card says it too)
+  const slab = slabText(job);
+  const showSlab = !!slab && keys.length > 0 && state.model === "coarse" && !(job.status === "paused" && job.gate === "shape");
+  $("#modelWarn").hidden = !showSlab;
+  if (showSlab) { $("#modelWarn").className = `modelWarn ${slab.cls}`; $("#modelWarn").textContent = slab.text; }
   $("#mv").style.display = keys.length ? "" : "none";
   if (!keys.length) { $("#modelBar").innerHTML = ""; return; }
   const newest = keys[keys.length - 1];
   if (state.wantModel && models[state.wantModel]) { state.model = state.wantModel; state.wantModel = null; }
   else if (!state.model || !models[state.model] || state._userPicked !== true) state.model = newest;
-  $("#modelBar").innerHTML = keys.map((k) => `<button data-k="${k}" class="${k === state.model ? "on" : ""}">${models[k].label}</button>`).join("");
+  $("#modelBar").innerHTML = keys.map((k) => `<button data-k="${k}" class="${k === state.model ? "on" : ""}">${shapeName(job, models[k].label)}</button>`).join("");
   $$("#modelBar button").forEach((b) => b.addEventListener("click", () => { state.model = b.dataset.k; state._userPicked = true; renderModels(job); }));
   const src = fileUrl(job, models[state.model].file);
   const mv = $("#mv");

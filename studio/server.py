@@ -83,6 +83,25 @@ def save_job(job):
     os.replace(tmp, path)
 
 
+def shape_name(job):
+    return "Pixal3D" if job.get("params", {}).get("shape_model") == "pixal3d" else "TRELLIS.2"
+
+
+# Shape depth (thinnest / middle side, from webmodel.py) below these reads as a slab / as shallow.
+# Measured: a cardboard-cut-out result 0.08, a shallow one 0.32, good figures 0.5-0.98.
+FLAT_BELOW, SHALLOW_BELOW = 0.25, 0.45
+
+
+def read_shape_check(job):
+    f = job_dir(job["id"]) / "web" / "coarse.glb.json"
+    try:
+        depth = json.loads(f.read_text())["depth"]
+    except Exception:
+        return
+    level = "flat" if depth < FLAT_BELOW else "shallow" if depth < SHALLOW_BELOW else "ok"
+    job["shape_check"] = {"depth": depth, "level": level}
+
+
 def public(job):
     return {k: v for k, v in job.items() if not k.startswith("_")}
 
@@ -95,6 +114,8 @@ def load_jobs():
             continue
         for k in ("_done_nodes", "_cached_nodes"):
             job[k] = set(job.get(k) or [])
+        if "shape_check" not in job:
+            read_shape_check(job)
         jobs[job["id"]] = job
 
 
@@ -109,7 +130,7 @@ async def reattach(app):
     for job in list(jobs.values()):
         if job.get("status") == "paused":          # make sure its checkpoint preview exists
             out_dir = COMFY_OUT / "studio" / job["id"]
-            for key, label in (("coarse", "Shape (TRELLIS.2)"), ("detail", "Hi3D detail")):
+            for key, label in (("coarse", f"Shape ({shape_name(job)})"), ("detail", "Hi3D detail")):
                 if key not in job["models"] and list(out_dir.glob(f"{key}_*.glb")):
                     asyncio.create_task(make_web_model(job["id"], out_dir, key, label))
         if job.get("status") not in ("submitting", "queued", "running"):
@@ -396,7 +417,7 @@ async def on_output(app, job, nid, output):
         job["shots"].append({"label": label, "file": f"shots/{name}", "stage": NODE_STAGE.get(nid), "t": time.time()})
     # 3D results
     out_dir = COMFY_OUT / "studio" / job["id"]
-    model_nodes = {"902": ("coarse", "Shape (TRELLIS.2)"), "407": ("detail", "Hi3D detail"),
+    model_nodes = {"902": ("coarse", f"Shape ({shape_name(job)})"), "407": ("detail", "Hi3D detail"),
                    "386": ("painted", "Painted (UltraTex)")}
     if nid in model_nodes:
         key, label = model_nodes[nid]
@@ -443,6 +464,7 @@ async def make_web_model(jid, out_dir, key, label, faces=200_000):
     mode = "copy" if key == "painted" or src.stat().st_size < 4_000_000 else "clay"
     proc = await asyncio.create_subprocess_exec(
         str(COMFY_PY), "-s", str(HERE / "webmodel.py"), str(src), str(dst), str(faces), mode,
+        "measure" if key == "coarse" else "",
         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     web_procs.add(proc)
@@ -456,6 +478,10 @@ async def make_web_model(jid, out_dir, key, label, faces=200_000):
     # versioned URL: a retried shape replaces the file, and the browser must not show the old one
     job["models"][key] = {"file": f"web/{key}.glb?v={int(time.time())}", "label": label}
     job["outputs"][key] = str(src)
+    if key == "coarse":
+        read_shape_check(job)
+        if job.get("shape_check", {}).get("level") == "flat":
+            log(f"job {jid}: shape looks flat (depth {job['shape_check']['depth']})")
     save_job(job)
     await broadcast(job)
 
@@ -599,7 +625,8 @@ def new_job(params, image_bytes, filename):
         "status": "submitting", "params": params, "input": f"input{ext}", "progress": 0.0,
         "eta_seconds": None, "current_stage": None, "error": None, "shots": [], "models": {},
         "outputs": {}, "summary": None, "project": None,
-        "stages": {key: {"state": "pending", "fraction": 0.0, "title": title, "description": desc}
+        "stages": {key: {"state": "pending", "fraction": 0.0, "title": title,
+                         "description": desc.replace("TRELLIS.2", "Pixal3D") if params["shape_model"] == "pixal3d" else desc}
                    for key, title, desc, _, _ in STAGES},
         "_weights": weights, "_done_nodes": set(), "_current_node": None,
         "seeds": {nid: params["seed"] + int(nid) for nid in SEED_INPUTS},
@@ -687,6 +714,8 @@ async def api_retry(request):
             job["stages"][key].pop(k, None)
         job["_done_nodes"] -= WORK[key]
     job["models"].pop(gate["model"], None)
+    if gate["model"] == "coarse":
+        job.pop("shape_check", None)
     job["tries"] = job.get("tries", 1) + 1
     await submit_phase(request.app, job, job["gate"])
     return web.json_response({"ok": True})

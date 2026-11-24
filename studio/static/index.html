@@ -6,7 +6,7 @@
 <title>Hi3D Print Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/app.css?v=7">
+<link rel="stylesheet" href="/static/app.css?v=8">
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
 </head>
 <body>
@@ -99,6 +99,7 @@
         <div class="gateText">
           <h2 id="gateTitle">Check the shape</h2>
           <p id="gateBody"></p>
+          <p id="gateWarn" class="gateWarn" hidden></p>
         </div>
         <div class="gateActions">
           <button id="gateGo" class="primary">Looks good, continue</button>
@@ -124,6 +125,7 @@
           </div>
           <div class="tabBody" data-body="model" hidden>
             <div class="modelBar" id="modelBar"></div>
+            <div id="modelWarn" class="modelWarn" hidden></div>
             <model-viewer id="mv" camera-controls auto-rotate rotation-per-second="18deg" shadow-intensity="0.8"
               exposure="1.05" environment-image="neutral" interaction-prompt="none" touch-action="pan-y"></model-viewer>
             <div id="modelEmpty" class="placeholder">3D previews appear as each stage finishes.</div>
@@ -156,6 +158,6 @@
 
 <div id="lightbox" class="lightbox" hidden><img alt=""><div class="lbCap"></div></div>
 <div id="toast" class="toast" hidden></div>
-<script src="/static/app.js?v=10"></script>
+<script src="/static/app.js?v=11"></script>
 </body>
 </html>
