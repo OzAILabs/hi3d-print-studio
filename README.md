@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/logo/Hi3D_Print_Studio_Banner.png" alt="Hi3D Print Studio" width="800">
+<img src="docs/logo/banner.png" alt="Hi3D Print Studio" width="800">
 
 **One picture in. A detailed, multi-colour 3D print out.**
 
@@ -64,9 +64,13 @@ the dragon is a hand-painted picture. Flat colours print much faster than painte
 | | |
 |---|---|
 | OS | Windows 10 / 11 |
-| GPU | NVIDIA, **16 GB+ VRAM** recommended (tested on a 24 GB RTX PRO 5000 laptop) |
+| GPU | NVIDIA, **16 GB+ VRAM** recommended. Tested on a 24 GB RTX PRO 5000 laptop, where a print was seen using about 13 GB; 16 GB cards have not been tested yet |
 | RAM | **32 GB+** (peaks around 33 GB during sealing and the print step) |
 | Disk | ~60 GB (ComfyUI, PyTorch, ~33 GB of models) |
+
+These are for the studio itself. The optional, experimental **Split into pieces** feature is not part
+of it: it is off and hidden unless you install it separately, and only then needs more (a 24 GB card,
+see [Experimental: split into pieces](#experimental-split-into-pieces)).
 | Software | [Git for Windows](https://git-scm.com/download/win), [Bambu Studio](https://bambulab.com/en/download/studio) |
 | Printer | Bambu Lab A1 mini with AMS lite out of the box (A1, P1S and X1C presets included) |
 
@@ -144,8 +148,9 @@ It needs a separate install (about 7 GB, all inside `parts/`):
 bash setup/install_split.sh
 ```
 
-Limits: the part finder uses about 21 GB of graphics memory, so it only runs while nothing else
-is; borders follow the AI's parts and can be ragged; organic busts (like the dragon) often come
+It stays hidden in the studio until this install is done, and only runs when you press **Split**.
+Its part finder needs about 21 GB of graphics memory, so it wants a 24 GB card and only runs while
+nothing else is (the studio unloads its own engine first). Other limits: borders follow the AI's parts and can be ragged; organic busts (like the dragon) often come
 back as one big part; peg fit is untested on real prints. Code: `split/`.
 
 ## Troubleshooting

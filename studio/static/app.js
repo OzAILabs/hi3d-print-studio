@@ -516,6 +516,7 @@ async function pollStatus() {
   try {
     const s = await (await fetch("/api/status")).json();
     setEngine(s.engine);
+    $(".splitBox").hidden = !s.split_installed;     // optional feature: only once installed
     if (s.gpu) $("#gpuPill span").textContent = `GPU ${s.gpu.util}% · ${(s.gpu.mem_used / 1024).toFixed(1)}/${(s.gpu.mem_total / 1024).toFixed(0)} GB`;
   } catch { /* studio restarting */ }
 }

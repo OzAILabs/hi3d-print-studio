@@ -42,6 +42,13 @@ STATIC = HERE / "static"
 BAMBU = Path(r"C:\Program Files\Bambu Studio\bambu-studio.exe")
 RECOLOUR_PY = ROOT / "comfyui_nodes" / "Hi3D-ColourPrint" / "recolour.py"
 SPLIT_PY = ROOT / "split" / "split_job.py"          # experimental: split a print into pieces
+
+
+def split_installed():
+    """The split feature is optional: it shows only once setup/install_split.sh has been run."""
+    parts = ROOT / "parts"
+    return ((parts / ".venv-p3sam" / "Scripts" / "python.exe").exists()
+            and (parts / "weights" / "p3sam" / "p3sam.safetensors").exists())
 PORT = int(os.environ.get("HI3D_STUDIO_PORT", "7870"))
 CLIENT_ID = "hi3d-print-studio-" + uuid.uuid4().hex[:8]
 TEMPLATE = json.loads((HERE / "workflow_api.json").read_text())
@@ -958,6 +965,8 @@ async def api_split(request):
         raise web.HTTPBadRequest(text="Only a finished print can be split")
     if job.get("splitting"):
         raise web.HTTPBadRequest(text="Already splitting this print")
+    if not split_installed():
+        raise web.HTTPBadRequest(text="Split into pieces is not installed: run setup/install_split.sh")
     busy = [j for j in jobs.values() if j.get("status") in ("submitting", "queued", "running") or j.get("splitting")]
     if busy:
         raise web.HTTPBadRequest(text="Wait until nothing else is running: the part finder needs the whole graphics card")
@@ -1074,7 +1083,8 @@ async def api_status(request):
         gpu = {"name": out[0], "util": int(out[1]), "mem_used": int(out[2]), "mem_total": int(out[3])}
     except Exception:
         pass
-    return web.json_response({"engine": {k: v for k, v in engine.items() if k != "process"}, "gpu": gpu})
+    return web.json_response({"engine": {k: v for k, v in engine.items() if k != "process"}, "gpu": gpu,
+                              "split_installed": split_installed()})
 
 
 async def api_events(request):
